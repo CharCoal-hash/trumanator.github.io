@@ -3,363 +3,477 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Game Panel</title>
+    <title>French Quiz - Presentation Core</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.4);
-            --text-main: #1e293b;
-            --accent: #4f46e5;
-        }
-
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            -webkit-tap-highlight-color: transparent;
+            --glass-panel: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
         }
 
         body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
-            padding: 16px;
+            padding: 40px 20px;
             min-height: 100vh;
+            color: #f8fafc;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(-45deg, #ff7b90, #ffae77, #7bc8ff, #9873ff);
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #2e1065, #0f172a);
             background-size: 400% 400%;
-            animation: fluidGradient 12s ease infinite;
+            animation: hostBackground 16s ease infinite;
         }
 
-        @keyframes fluidGradient {
+        @keyframes hostBackground {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        .app-window {
+        .main-stage {
             width: 100%;
-            max-width: 420px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            max-width: 1000px;
+            background: var(--glass-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Modern Top Utility Bar */
-        .top-navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.4);
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .nav-pill {
-            background: white;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #475569;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .nav-pill.score-pill {
-            background: #e0f2fe;
-            color: #0369a1;
-        }
-
-        /* Screen Content Containers */
-        .content-body {
-            padding: 24px;
+            border-radius: 32px;
+            padding: 45px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
             text-align: center;
+            position: relative;
         }
 
-        h2 {
-            color: var(--text-main);
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 900;
             margin-top: 0;
-            font-size: 1.6rem;
-            font-weight: 800;
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        p {
-            color: #64748b;
-            font-size: 1rem;
-            line-height: 1.5;
+        p.subtitle { font-size: 1.3rem; color: #94a3b8; margin-bottom: 30px; }
+        .split-lobby { display: flex; gap: 40px; justify-content: center; align-items: flex-start; flex-wrap: wrap; margin-top: 20px; }
+        
+        .qr-node {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            padding: 24px;
+            border-radius: 24px;
+            display: inline-block;
         }
 
-        /* Modern Custom Controls */
-        input[type="text"] {
-            width: 100%;
-            padding: 16px;
-            font-size: 1.1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 14px;
-            margin: 16px 0 20px 0;
-            outline: none;
-            text-align: center;
-            transition: all 0.2s ease;
-            color: var(--text-main);
-            font-weight: 600;
+        #qrcode { background: white; padding: 16px; border-radius: 16px; display: inline-block; }
+        
+        .room-tag {
+            font-family: monospace; font-size: 1.2rem; font-weight: 800; color: #38bdf8; margin-top: 14px;
+            background: rgba(56, 189, 248, 0.1); padding: 6px 14px; border-radius: 10px; display: inline-block;
         }
 
-        input[type="text"]:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        .roster-card {
+            width: 460px; background: rgba(0, 0, 0, 0.25); border-radius: 24px; padding: 24px;
+            border: 1px solid rgba(255,255,255,0.04); min-height: 290px; text-align: left;
         }
 
-        .action-button {
-            width: 100%;
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 16px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            border-radius: 14px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-            transition: all 0.2s ease;
-        }
+        .roster-card h3 { margin-top: 0; font-size: 1.3rem; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; }
 
-        .action-button:active {
-            transform: scale(0.98);
-            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
-        }
+        .badge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 220px; overflow-y: auto; margin-top: 15px; }
 
-        /* Dynamic Flashcard Space */
-        .quiz-card {
-            background: white;
-            padding: 40px 16px;
-            border-radius: 18px;
-            font-size: 2.4rem;
-            font-weight: 800;
-            color: var(--accent);
-            margin-bottom: 24px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.05);
+        .player-chip {
+            background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255,255,255,0.05);
+            padding: 10px 14px; border-radius: 12px; font-weight: 700; display: flex;
+            align-items: center; justify-content: space-between; font-size: 1rem; cursor: pointer;
+            transition: background 0.2s;
         }
+        .player-chip:hover { background: rgba(255, 255, 255, 0.15); }
 
-        /* Grid Options System */
-        .quiz-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+        /* Configuration Panels */
+        .config-row { margin: 20px 0; font-size: 1.2rem; color: #cbd5e1; }
+        select { background: #1e293b; color: white; border: 1px solid var(--glass-border); padding: 8px 16px; border-radius: 8px; font-size: 1rem; font-weight: 600; outline: none; }
 
-        .option-item {
-            background: white;
-            border: 2px solid #e2e8f0;
-            padding: 18px;
-            font-size: 1.1rem;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--text-main);
-            font-weight: 600;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
-
-        .option-item:active {
-            transform: scale(0.97);
-        }
-
-        .option-item.correct {
-            background: #10b981 !important;
-            border-color: #10b981 !important;
-            color: white !important;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .option-item.wrong {
-            background: #ef4444 !important;
-            border-color: #ef4444 !important;
-            color: white !important;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        .launch-btn {
+            background: var(--accent-green); color: white; border: none; padding: 18px 50px; font-size: 1.6rem;
+            border-radius: 16px; cursor: pointer; font-weight: 800; margin-top: 20px; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: none;
         }
 
         .hidden { display: none !important; }
 
-        /* Spinner for loading state */
-        .pulse-loader {
-            width: 60px;
-            height: 60px;
-            background: var(--accent);
-            border-radius: 50%;
-            margin: 30px auto;
-            animation: pulse 1.8s infinite ease-in-out;
-        }
+        /* Match Runtime UI Components */
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: rgba(0,0,0,0.2); padding: 15px 30px; border-radius: 16px; }
+        .timer-display { font-size: 2.2rem; font-weight: 900; color: #fbbf24; }
+        .question-box { background: white; color: #0f172a; padding: 40px; border-radius: 24px; font-size: 3rem; font-weight: 900; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        
+        .options-display-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+        .display-option { background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1); padding: 25px; font-size: 1.5rem; font-weight: 700; border-radius: 16px; text-align: left; display: flex; align-items: center; gap: 15px; }
+        .display-option.correct { background: rgba(16, 185, 129, 0.2) !important; border-color: var(--accent-green) !important; color: #34d399; }
+        .display-option.revealed { opacity: 0.5; }
 
-        @keyframes pulse {
-            0% { transform: scale(0.6); opacity: 0.4; }
-            50% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(0.6); opacity: 0.4; }
-        }
+        .shape-indicator { width: 24px; height: 24px; border-radius: 6px; display: inline-block; }
+        .shape-0 { background: #ef4444; } .shape-1 { background: #3b82f6; } .shape-2 { background: #eab308; } .shape-3 { background: #10b981; }
+
+        /* Leaderboard and Mod Overlays */
+        table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 20px; }
+        td, th { padding: 16px 20px; text-align: left; font-size: 1.2rem; }
+        th { color: #94a3b8; text-transform: uppercase; }
+        td { background: rgba(255, 255, 255, 0.04); font-weight: 600; }
+        td:first-child { border-radius: 14px 0 0 14px; font-weight: 800; color: #38bdf8; }
+        td:last-child { border-radius: 0 14px 14px 0; text-align: right; color: #34d399; }
+
+        /* Moderation Modal Window */
+        .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.75); display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .modal-body { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; width: 360px; text-align: left; }
+        .modal-body h4 { margin-top: 0; font-size: 1.3rem; margin-bottom: 15px; }
+        .modal-body input { width: 100%; padding: 12px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; size: 1.1rem; box-sizing: border-box; margin-bottom: 20px; }
+        .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+        .mod-btn { padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem; }
+        .mod-save { background: var(--accent-blue); color: white; }
+        .mod-kick { background: #f97316; color: white; }
+        .mod-ban { background: var(--accent-red); color: white; }
+        .mod-cancel { background: #475569; color: white; }
     </style>
 </head>
 <body>
 
-<div class="app-window">
-    <!-- Top Context Navigation Bar -->
-    <div class="top-navbar">
-        <div class="nav-pill">🇫🇷 Vocab</div>
-        <div class="nav-pill score-pill" id="hud-score-wrapper">Pts: <span id="hud-score">0</span></div>
+<div class="main-stage">
+    <div id="stage-lobby">
+        <h1>Jeu de Vocabulaire Français</h1>
+        <p class="subtitle">Scan the QR code to connect instantly.</p>
+        
+        <div class="split-lobby">
+            <div class="qr-node">
+                <div id="qrcode"></div>
+                <div><span class="room-tag" id="room-code-badge">Creating Room...</span></div>
+            </div>
+            
+            <div class="roster-card">
+                <h3>Active Players (<span id="lobby-count" style="color:var(--accent-blue)">0</span>) <span style="font-size:0.8rem; float:right; color:#64748b; font-weight:normal;">Click player to moderate</span></h3>
+                <div class="badge-grid" id="lobby-grid-target"></div>
+            </div>
+        </div>
+
+        <div class="config-row">
+            <label>Question Timer Duration: </label>
+            <select id="timer-selection">
+                <option value="10">10 Seconds</option>
+                <option value="20" selected>20 Seconds</option>
+                <option value="30">30 Seconds</option>
+                <option value="45">45 Seconds</option>
+            </select>
+        </div>
+        
+        <button id="action-launch-trigger" class="launch-btn" onclick="broadcastStartSignal()">START MATCH</button>
     </div>
 
-    <!-- Interface Body -->
-    <div class="content-body">
-        
-        <!-- MODULE 1: Join Lobby -->
-        <div id="panel-join">
-            <h2>Rejoindre</h2>
-            <p>Type your name to step directly into the real-time presentation lobby.</p>
-            <input type="text" id="username" placeholder="Your Name" maxlength="14" autocomplete="off">
-            <button class="action-button" onclick="connectToHost()">Enter Game</button>
-            <p id="network-status" style="margin-top: 15px; font-size: 0.85rem; font-weight: 600;"></p>
+    <div id="stage-match" class="hidden">
+        <div class="game-header">
+            <div style="font-size: 1.3rem; font-weight:800;">Question <span id="hud-q-index">1</span> / 5</div>
+            <div class="timer-display" id="hud-timer">--</div>
+            <div style="font-size: 1.2rem; color: #a7f3d0;" id="hud-answers-counter">Answers: 0 / 0</div>
         </div>
 
-        <!-- MODULE 2: Waiting Room -->
-        <div id="panel-wait" class="hidden">
-            <h2>Prêt, <span id="player-greeting" style="color:var(--accent);"></span>!</h2>
-            <p>You have securely joined. Watch the main presenter screen for the kickoff.</p>
-            <div class="pulse-loader"></div>
+        <div class="question-box" id="current-question-text">...</div>
+
+        <div class="options-display-grid" id="options-container-grid">
+            <div class="display-option"><span class="shape-indicator shape-0"></span><span class="opt-text"></span></div>
+            <div class="display-option"><span class="shape-indicator shape-1"></span><span class="opt-text"></span></div>
+            <div class="display-option"><span class="shape-indicator shape-2"></span><span class="opt-text"></span></div>
+            <div class="display-option"><span class="shape-indicator shape-3"></span><span class="opt-text"></span></div>
         </div>
 
-        <!-- MODULE 3: Active Interactive Quiz -->
-        <div id="panel-quiz" class="hidden">
-            <div style="font-weight: 800; color: #64748b; margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                Question <span id="question-index-label">1</span> of 5
-            </div>
-            <div class="quiz-card" id="french-target-word">...</div>
-            <div class="quiz-grid" id="interactive-options-box">
-                <div class="option-item" onclick="handleSubmission(this)"></div>
-                <div class="option-item" onclick="handleSubmission(this)"></div>
-                <div class="option-item" onclick="handleSubmission(this)"></div>
-                <div class="option-item" onclick="handleSubmission(this)"></div>
-            </div>
-        </div>
+        <button class="launch-btn" id="next-step-btn" style="display:inline-block;" onclick="progressGameLoop()">Reveal Answer</button>
+    </div>
 
-        <!-- MODULE 4: Presentation End Screen -->
-        <div id="panel-end" class="hidden">
-            <h2 style="font-size: 2rem;">Fin du jeu! 🏆</h2>
-            <p>Excellent effort. Turn your attention to the projector display to find out your final match position!</p>
-        </div>
+    <div id="stage-scoreboard" class="hidden">
+        <h1 style="background: linear-gradient(to right, #34d399, #3b82f6); -webkit-background-clip: text;">Final Standings</h1>
+        <p class="subtitle">Presentation Completed</p>
+        <table>
+            <thead>
+                <tr><th style="width: 20%">Rank</th><th style="width: 55%">Competitor Name</th><th style="width: 25%; text-align: right;">Total Points</th></tr>
+            </thead>
+            <tbody id="scoreboard-table-body"></tbody>
+        </table>
+        <button class="launch-btn" style="display:inline-block; background:#475569;" onclick="window.location.reload()">Host New Room</button>
+    </div>
+</div>
 
+<div class="modal-overlay hidden" id="mod-modal">
+    <div class="modal-body">
+        <h4 id="mod-target-title">Moderate Player</h4>
+        <input type="text" id="mod-name-input" placeholder="Edit Player Name">
+        <div class="modal-actions">
+            <button class="mod-btn mod-save" onclick="executeRename()">Save Changes</button>
+            <button class="mod-btn mod-kick" onclick="executeKick()">Kick from Room</button>
+            <button class="mod-btn mod-ban" onclick="executeBan()">Ban Player Profile</button>
+            <button class="mod-btn mod-cancel" onclick="closeModModal()">Cancel</button>
+        </div>
     </div>
 </div>
 
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const targetRoomId = urlParams.get('room');
+    const DEPLOYED_PLAYER_URL = "https://charcoal-hash.github.io/trumanator.github.io/player.html";
+
+    const vocabPool = [
+        { french: "Bonjour", english: "Hello", wrongs: ["Goodbye", "Thank you", "Please"] },
+        { french: "Chat", english: "Cat", wrongs: ["Dog", "Bird", "Mouse"] },
+        { french: "Pomme", english: "Apple", wrongs: ["Banana", "Orange", "Grape"] },
+        { french: "Livre", english: "Book", wrongs: ["Pen", "Chair", "Table"] },
+        { french: "Voiture", english: "Car", wrongs: ["Bicycle", "Train", "Plane"] }
+    ];
+
+    function generateSecureId() {
+        const structuralAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let builtToken = "";
+        for (let idx = 0; idx < 4; idx++) { builtToken += structuralAlphabet.charAt(Math.floor(Math.random() * structuralAlphabet.length)); }
+        return builtToken;
+    }
     
-    let peer, connection;
-    let registeredName = "";
-    let vocabularySet = [];
+    const calculatedRoomToken = generateSecureId();
+    let trackingScoreboardMap = {}; 
+    let playerPeerIdMap = {}; // Maps Name -> Peer ID string
+    let activeClientConnections = {}; // Maps Name -> Connection Object
+    let bannedPeerIds = new Set();
+    
     let currentQuestionIndex = 0;
-    let personalScore = 0;
-    let interactionAllowed = true;
+    let selectedTimerDuration = 20;
+    let countdownInterval = null;
+    let activeSecondsLeft = 0;
+    let answersSubmittedThisRound = 0;
+    let matchPhase = "LOBBY"; // LOBBY, QUESTION, REVEAL, END
+    let shufflesThisRound = [];
+    let moddingPlayerName = "";
 
-    if (!targetRoomId) {
-        document.getElementById("network-status").innerText = "⚠️ Missing Room ID parameters inside QR Code.";
-        document.getElementById("network-status").style.color = "#ef4444";
-    }
+    const peerInstance = new Peer(calculatedRoomToken);
 
-    function connectToHost() {
-        registeredName = document.getElementById("username").value.trim();
-        if(!registeredName) return alert("Please supply a nickname before hitting entry.");
-        
-        document.getElementById("network-status").innerText = "Connecting to classroom network...";
-        document.getElementById("network-status").style.color = "#4f46e5";
-        
-        peer = new Peer();
-        
-        peer.on('open', () => {
-            connection = peer.connect(targetRoomId);
+    peerInstance.on('open', (validatedId) => {
+        document.getElementById("room-code-badge").innerText = "ROOM: " + validatedId;
+        const compiledTargetUrl = `${DEPLOYED_PLAYER_URL}?room=${validatedId}`;
+        new QRCode(document.getElementById("qrcode"), { text: compiledTargetUrl, width: 210, height: 210 });
+    });
+
+    peerInstance.on('connection', (incomingClientChannel) => {
+        incomingClientChannel.on('data', (incomingPackage) => {
+            let pId = incomingClientChannel.peer;
             
-            connection.on('open', () => {
-                connection.send({ type: 'JOIN', name: registeredName });
-                document.getElementById("panel-join").classList.add("hidden");
-                document.getElementById("player-greeting").innerText = registeredName;
-                document.getElementById("panel-wait").classList.remove("hidden");
-            });
+            if (bannedPeerIds.has(pId)) {
+                incomingClientChannel.send({ type: 'BANNED' });
+                setTimeout(() => incomingClientChannel.close(), 500);
+                return;
+            }
 
-            connection.on('data', (payload) => {
-                if (payload.type === 'START_GAME') {
-                    vocabularySet = payload.words;
-                    initiateActiveQuiz();
+            if (incomingPackage.type === 'JOIN') {
+                let uniqueName = incomingPackage.name.trim();
+                if (trackingScoreboardMap[uniqueName] !== undefined) {
+                    uniqueName += "_" + Math.floor(Math.random() * 100);
                 }
-            });
+                
+                trackingScoreboardMap[uniqueName] = 0;
+                playerPeerIdMap[uniqueName] = pId;
+                activeClientConnections[uniqueName] = incomingClientChannel;
+                
+                incomingClientChannel.send({ type: 'JOIN_CONFIRM', assignedName: uniqueName });
+                
+                refreshLobbyRosterView();
+                document.getElementById("action-launch-trigger").style.display = "inline-block";
+            }
             
-            connection.on('close', () => {
-                alert("Host terminated the connection.");
-                window.location.reload();
-            });
+            if (incomingPackage.type === 'ANSWER_SUBMIT') {
+                if(matchPhase !== "QUESTION") return;
+                answersSubmittedThisRound++;
+                updateAnswerHUDCount();
+                
+                let currentCorrectWord = vocabPool[currentQuestionIndex].english;
+                if(incomingPackage.choice === currentCorrectWord) {
+                    trackingScoreboardMap[incomingPackage.name] += 100 + (activeSecondsLeft * 5); // Speed bonus
+                }
+                
+                if (answersSubmittedThisRound >= Object.keys(trackingScoreboardMap).length) {
+                    revealRoundResults();
+                }
+            }
         });
+    });
 
-        peer.on('error', (err) => {
-            document.getElementById("network-status").innerText = "Connection failed. Make sure the Host tab is open.";
-            document.getElementById("network-status").style.color = "#ef4444";
+    function refreshLobbyRosterView() {
+        const gridBox = document.getElementById("lobby-grid-target");
+        gridBox.innerHTML = "";
+        const identityKeys = Object.keys(trackingScoreboardMap);
+        document.getElementById("lobby-count").innerText = identityKeys.length;
+        
+        identityKeys.forEach(pName => {
+            gridBox.innerHTML += `<div class="player-chip" onclick="openModModal('${pName}')">⚡ ${pName}</div>`;
         });
+        if(identityKeys.length === 0) document.getElementById("action-launch-trigger").style.display = "none";
     }
 
-    function initiateActiveQuiz() {
-        document.getElementById("panel-wait").classList.add("hidden");
-        document.getElementById("panel-quiz").classList.remove("hidden");
-        renderQuizQuestion();
+    /* MODERATION PROTOCOLS */
+    function openModModal(name) {
+        moddingPlayerName = name;
+        document.getElementById("mod-target-title").innerText = `Moderate: ${name}`;
+        document.getElementById("mod-name-input").value = name;
+        document.getElementById("mod-modal").classList.remove("hidden");
     }
 
-    function renderQuizQuestion() {
-        interactionAllowed = true;
-        let wordData = vocabularySet[currentQuestionIndex];
-        document.getElementById("question-index-label").innerText = currentQuestionIndex + 1;
-        document.getElementById("french-target-word").innerText = wordData.french;
-        
-        let shuffledChoices = [wordData.english, ...wordData.wrongs].sort(() => 0.5 - Math.random());
-        let interfaceButtons = document.querySelectorAll("#interactive-options-box .option-item");
-        
-        interfaceButtons.forEach((btn, index) => {
-            btn.innerText = shuffledChoices[index];
-            btn.className = "option-item";
-        });
-    }
+    function closeModModal() { document.getElementById("mod-modal").classList.add("hidden"); }
 
-    function handleSubmission(selectedDiv) {
-        if (!interactionAllowed) return;
-        interactionAllowed = false;
+    function executeRename() {
+        let newName = document.getElementById("mod-name-input").value.trim();
+        if(!newName || newName === moddingPlayerName) return closeModModal();
         
-        let targetWordData = vocabularySet[currentQuestionIndex];
-        if (selectedDiv.innerText === targetWordData.english) {
-            selectedDiv.classList.add("correct");
-            personalScore++;
-            document.getElementById("hud-score").innerText = personalScore;
-            connection.send({ type: 'SCORE_UPDATE', name: registeredName, score: personalScore });
-        } else {
-            selectedDiv.classList.add("wrong");
-            document.querySelectorAll("#interactive-options-box .option-item").forEach(box => {
-                if(box.innerText === targetWordData.english) box.classList.add("correct");
-            });
+        if(trackingScoreboardMap[newName] !== undefined) {
+            alert("Name already in use!"); return;
         }
 
-        setTimeout(() => {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < vocabularySet.length) {
-                renderQuizQuestion();
-            } else {
-                document.getElementById("panel-quiz").classList.add("hidden");
-                document.getElementById("panel-end").classList.remove("hidden");
+        // Migrate internal references
+        trackingScoreboardMap[newName] = trackingScoreboardMap[moddingPlayerName];
+        playerPeerIdMap[newName] = playerPeerIdMap[moddingPlayerName];
+        activeClientConnections[newName] = activeClientConnections[moddingPlayerName];
+        
+        delete trackingScoreboardMap[moddingPlayerName];
+        delete playerPeerIdMap[moddingPlayerName];
+        delete activeClientConnections[moddingPlayerName];
+
+        activeClientConnections[newName].send({ type: 'FORCE_RENAME', newName: newName });
+        
+        refreshLobbyRosterView();
+        closeModModal();
+    }
+
+    function executeKick() {
+        let conn = activeClientConnections[moddingPlayerName];
+        if(conn) {
+            conn.send({ type: 'KICKED' });
+            setTimeout(() => conn.close(), 300);
+        }
+        removePlayerLocally(moddingPlayerName);
+        closeModModal();
+    }
+
+    function executeBan() {
+        let pId = playerPeerIdMap[moddingPlayerName];
+        if(pId) bannedPeerIds.add(pId);
+        executeKick();
+    }
+
+    function removePlayerLocally(name) {
+        delete trackingScoreboardMap[name];
+        delete playerPeerIdMap[name];
+        delete activeClientConnections[name];
+        refreshLobbyRosterView();
+    }
+
+    /* MATCH ENGINE CENTRAL LOOP */
+    function broadcastStartSignal() {
+        selectedTimerDuration = parseInt(document.getElementById("timer-selection").value);
+        document.getElementById("stage-lobby").classList.add("hidden");
+        document.getElementById("stage-match").classList.remove("hidden");
+        launchQuestionIteration();
+    }
+
+    function launchQuestionIteration() {
+        matchPhase = "QUESTION";
+        answersSubmittedThisRound = 0;
+        activeSecondsLeft = selectedTimerDuration;
+        
+        let currentWordData = vocabPool[currentQuestionIndex];
+        document.getElementById("hud-q-index").innerText = currentQuestionIndex + 1;
+        document.getElementById("current-question-text").innerText = `"${currentWordData.french}" means...`;
+        
+        shufflesThisRound = [currentWordData.english, ...currentWordData.wrongs].sort(() => 0.5 - Math.random());
+        
+        let optionNodes = document.querySelectorAll("#options-container-grid .display-option");
+        optionNodes.forEach((node, index) => {
+            node.className = "display-option";
+            node.querySelector(".opt-text").innerText = shufflesThisRound[index];
+        });
+
+        updateAnswerHUDCount();
+        document.getElementById("hud-timer").innerText = activeSecondsLeft;
+        document.getElementById("next-step-btn").innerText = "Skip Timer";
+
+        // Message players to draw control inputs
+        Object.keys(activeClientConnections).forEach(name => {
+            activeClientConnections[name].send({
+                type: 'SHOW_QUESTION',
+                options: shufflesThisRound,
+                qIndex: currentQuestionIndex
+            });
+        });
+
+        countdownInterval = setInterval(() => {
+            activeSecondsLeft--;
+            document.getElementById("hud-timer").innerText = activeSecondsLeft;
+            if(activeSecondsLeft <= 0) {
+                revealRoundResults();
             }
-        }, 1600);
+        }, 1000);
+    }
+
+    function updateAnswerHUDCount() {
+        document.getElementById("hud-answers-counter").innerText = `Answers: ${answersSubmittedThisRound} / ${Object.keys(trackingScoreboardMap).length}`;
+    }
+
+    function revealRoundResults() {
+        clearInterval(countdownInterval);
+        matchPhase = "REVEAL";
+        
+        let currentWordData = vocabPool[currentQuestionIndex];
+        let optionNodes = document.querySelectorAll("#options-container-grid .display-option");
+        
+        optionNodes.forEach(node => {
+            let txt = node.querySelector(".opt-text").innerText;
+            if(txt === currentWordData.english) {
+                node.classList.add("correct");
+            } else {
+                node.classList.add("revealed");
+            }
+        });
+
+        Object.keys(activeClientConnections).forEach(name => {
+            activeClientConnections[name].send({ type: 'ROUND_ENDED', correct: currentWordData.english });
+        });
+
+        document.getElementById("next-step-btn").innerText = (currentQuestionIndex < vocabPool.length - 1) ? "Next Question" : "Show Results";
+    }
+
+    function progressGameLoop() {
+        if (matchPhase === "QUESTION") {
+            revealRoundResults();
+        } else if (matchPhase === "REVEAL") {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < vocabPool.length) {
+                launchQuestionIteration();
+            } else {
+                renderFinalStandings();
+            }
+        }
+    }
+
+    function renderFinalStandings() {
+        matchPhase = "END";
+        document.getElementById("stage-match").classList.add("hidden");
+        document.getElementById("stage-scoreboard").classList.remove("hidden");
+        
+        const targetedTableBody = document.getElementById("scoreboard-table-body");
+        targetedTableBody.innerHTML = "";
+        
+        let structuredRankingsArray = Object.entries(trackingScoreboardMap).sort((alpha, beta) => beta[1] - alpha[1]);
+        
+        structuredRankingsArray.forEach(([competitorName, pointsValue], positionIndex) => {
+            let rankLabel = `#${positionIndex + 1}`;
+            if(positionIndex === 0) rankLabel = "🥇 1st";
+            if(positionIndex === 1) rankLabel = "🥈 2nd";
+            if(positionIndex === 2) rankLabel = "🥉 3rd";
+
+            targetedTableBody.innerHTML += `<tr><td>${rankLabel}</td><td>${competitorName}</td><td>${pointsValue} pts</td></tr>`;
+        });
     }
 </script>
 </body>
