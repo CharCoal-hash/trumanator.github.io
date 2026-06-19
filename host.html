@@ -3,162 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Host Screen</title>
+    <title>French Quiz - Game Panel</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --blue: #0055A5; --red: #EF4135; }
-        body { font-family: system-ui, sans-serif; background: #2c3e50; color: white; text-align: center; margin: 0; padding: 40px; }
-        .container { max-width: 900px; margin: 0 auto; background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); }
-        .lobby-layout { display: flex; justify-content: space-around; align-items: center; margin-top: 30px; flex-wrap: wrap; }
-        #qrcode { background: white; padding: 15px; border-radius: 10px; display: inline-block; }
-        .player-list { width: 400px; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 20px; min-height: 200px; text-align: left;}
-        .player-badge { background: var(--blue); padding: 10px 15px; margin: 8px 0; border-radius: 5px; display: flex; justify-content: space-between; font-weight: bold;}
-        .start-btn { background: #2ecc71; color: white; border: none; padding: 15px 40px; font-size: 1.5rem; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 30px; display: none;}
-        .hidden { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.3rem; }
-        th, td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2); text-align: left; }
-        th { background: rgba(0,0,0,0.3); }
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-main: #1e293b;
+            --accent: #4f46e5;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 16px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(-45deg, #ff7b90, #ffae77, #7bc8ff, #9873ff);
+            background-size: 400% 400%;
+            animation: fluidGradient 12s ease infinite;
+        }
+
+        @keyframes fluidGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .app-window {
+            width: 100%;
+            max-width: 420px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Modern Top Utility Bar */
+        .top-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.4);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-pill {
+            background: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #475569;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-pill.score-pill {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        /* Screen Content Containers */
+        .content-body {
+            padding: 24px;
+            text-align: center;
+        }
+
+        h2 {
+            color: var(--text-main);
+            margin-top: 0;
+            font-size: 1.6rem;
+            font-weight: 800;
+        }
+
+        p {
+            color: #64748b;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Modern Custom Controls */
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            margin: 16px 0 20px 0;
+            outline: none;
+            text-align: center;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+        .action-button {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .action-button:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+        }
+
+        /* Dynamic Flashcard Space */
+        .quiz-card {
+            background: white;
+            padding: 40px 16px;
+            border-radius: 18px;
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 24px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Grid Options System */
+        .quiz-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 18px;
+            font-size: 1.1rem;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .option-item:active {
+            transform: scale(0.97);
+        }
+
+        .option-item.correct {
+            background: #10b981 !important;
+            border-color: #10b981 !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .option-item.wrong {
+            background: #ef4444 !important;
+            border-color: #ef4444 !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .hidden { display: none !important; }
+
+        /* Spinner for loading state */
+        .pulse-loader {
+            width: 60px;
+            height: 60px;
+            background: var(--accent);
+            border-radius: 50%;
+            margin: 30px auto;
+            animation: pulse 1.8s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.6); opacity: 0.4; }
+            50% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.6); opacity: 0.4; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="lobby-view">
-        <h1>Jeu de Vocabulaire Français</h1>
-        <p style="font-size: 1.3rem;">Scan the QR code on your smartphone to join!</p>
-        
-        <div class="lobby-layout">
-            <div>
-                <div id="qrcode"></div>
-                <p id="room-id-log" style="font-family: monospace; margin-top:10px;">Generating Room...</p>
-            </div>
-            
-            <div class="player-list">
-                <h3>Joined Players (<span id="player-count">0</span>):</h3>
-                <div id="players-container"></div>
-            </div>
-        </div>
-        
-        <button id="start-btn" class="start-btn" onclick="broadcastStart()">START GAME</button>
+<div class="app-window">
+    <!-- Top Context Navigation Bar -->
+    <div class="top-navbar">
+        <div class="nav-pill">🇫🇷 Vocab</div>
+        <div class="nav-pill score-pill" id="hud-score-wrapper">Pts: <span id="hud-score">0</span></div>
     </div>
 
-    <div id="game-view" class="hidden">
-        <h1>Live Leaderboard</h1>
-        <p>Players are answering questions on their phones right now!</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Player Name</th>
-                    <th>Score (Max 5)</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboard-body"></tbody>
-        </table>
+    <!-- Interface Body -->
+    <div class="content-body">
+        
+        <!-- MODULE 1: Join Lobby -->
+        <div id="panel-join">
+            <h2>Rejoindre</h2>
+            <p>Type your name to step directly into the real-time presentation lobby.</p>
+            <input type="text" id="username" placeholder="Your Name" maxlength="14" autocomplete="off">
+            <button class="action-button" onclick="connectToHost()">Enter Game</button>
+            <p id="network-status" style="margin-top: 15px; font-size: 0.85rem; font-weight: 600;"></p>
+        </div>
+
+        <!-- MODULE 2: Waiting Room -->
+        <div id="panel-wait" class="hidden">
+            <h2>Prêt, <span id="player-greeting" style="color:var(--accent);"></span>!</h2>
+            <p>You have securely joined. Watch the main presenter screen for the kickoff.</p>
+            <div class="pulse-loader"></div>
+        </div>
+
+        <!-- MODULE 3: Active Interactive Quiz -->
+        <div id="panel-quiz" class="hidden">
+            <div style="font-weight: 800; color: #64748b; margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                Question <span id="question-index-label">1</span> of 5
+            </div>
+            <div class="quiz-card" id="french-target-word">...</div>
+            <div class="quiz-grid" id="interactive-options-box">
+                <div class="option-item" onclick="handleSubmission(this)"></div>
+                <div class="option-item" onclick="handleSubmission(this)"></div>
+                <div class="option-item" onclick="handleSubmission(this)"></div>
+                <div class="option-item" onclick="handleSubmission(this)"></div>
+            </div>
+        </div>
+
+        <!-- MODULE 4: Presentation End Screen -->
+        <div id="panel-end" class="hidden">
+            <h2 style="font-size: 2rem;">Fin du jeu! 🏆</h2>
+            <p>Excellent effort. Turn your attention to the projector display to find out your final match position!</p>
+        </div>
+
     </div>
 </div>
 
 <script>
-    // ⚠️ CRITICAL STEP: Put your deployed player.html address here!
-    const DEPLOYED_PLAYER_URL = "https://charcoal-hash.github.io/trumanator.github.io/player.html";
-
-    const vocabPool = [
-        { french: "Bonjour", english: "Hello", wrongs: ["Goodbye", "Thank you", "Please"] },
-        { french: "Chat", english: "Cat", wrongs: ["Dog", "Bird", "Mouse"] },
-        { french: "Pomme", english: "Apple", wrongs: ["Banana", "Orange", "Grape"] },
-        { french: "Livre", english: "Book", wrongs: ["Pen", "Chair", "Table"] },
-        { french: "Voiture", english: "Car", wrongs: ["Bicycle", "Train", "Plane"] }
-    ];
-
-    // Safely generate a guaranteed 4-letter alphanumeric Room ID
-    function generateRoomId() {
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed ambiguous letters like I, O, 1, 0
-        let result = "";
-        for (let i = 0; i < 4; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetRoomId = urlParams.get('room');
     
-    const roomId = generateRoomId();
-    let players = {}; 
-    let connections = [];
+    let peer, connection;
+    let registeredName = "";
+    let vocabularySet = [];
+    let currentQuestionIndex = 0;
+    let personalScore = 0;
+    let interactionAllowed = true;
 
-    // Initialize PeerJS Host
-    const peer = new Peer(roomId);
+    if (!targetRoomId) {
+        document.getElementById("network-status").innerText = "⚠️ Missing Room ID parameters inside QR Code.";
+        document.getElementById("network-status").style.color = "#ef4444";
+    }
 
-    peer.on('open', (id) => {
-        document.getElementById("room-id-log").innerText = "Room Code: " + id;
+    function connectToHost() {
+        registeredName = document.getElementById("username").value.trim();
+        if(!registeredName) return alert("Please supply a nickname before hitting entry.");
         
-        // Assemble final URL pointing to player file with custom room ID parameter
-        const joinUrl = `${DEPLOYED_PLAYER_URL}?room=${id}`;
+        document.getElementById("network-status").innerText = "Connecting to classroom network...";
+        document.getElementById("network-status").style.color = "#4f46e5";
         
-        // Generate QR code targeting that URL
-        new QRCode(document.getElementById("qrcode"), {
-            text: joinUrl,
-            width: 200,
-            height: 200
+        peer = new Peer();
+        
+        peer.on('open', () => {
+            connection = peer.connect(targetRoomId);
+            
+            connection.on('open', () => {
+                connection.send({ type: 'JOIN', name: registeredName });
+                document.getElementById("panel-join").classList.add("hidden");
+                document.getElementById("player-greeting").innerText = registeredName;
+                document.getElementById("panel-wait").classList.remove("hidden");
+            });
+
+            connection.on('data', (payload) => {
+                if (payload.type === 'START_GAME') {
+                    vocabularySet = payload.words;
+                    initiateActiveQuiz();
+                }
+            });
+            
+            connection.on('close', () => {
+                alert("Host terminated the connection.");
+                window.location.reload();
+            });
         });
-    });
 
-    peer.on('connection', (conn) => {
-        connections.push(conn);
-        
-        conn.on('data', (data) => {
-            if (data.type === 'JOIN') {
-                players[data.name] = 0; // Initialize player score at 0
-                updatePlayerLobbyUI();
-                
-                // Show start button as soon as 1 player joins
-                document.getElementById("start-btn").style.display = "inline-block";
-            }
-            if (data.type === 'SCORE_UPDATE') {
-                players[data.name] = data.score;
-                updateLeaderboardUI();
-            }
-        });
-    });
-
-    function updatePlayerLobbyUI() {
-        const container = document.getElementById("players-container");
-        container.innerHTML = "";
-        const keys = Object.keys(players);
-        document.getElementById("player-count").innerText = keys.length;
-        
-        keys.forEach(name => {
-            container.innerHTML += `<div class="player-badge"><span>👤 ${name}</span><span>Ready</span></div>`;
+        peer.on('error', (err) => {
+            document.getElementById("network-status").innerText = "Connection failed. Make sure the Host tab is open.";
+            document.getElementById("network-status").style.color = "#ef4444";
         });
     }
 
-    function broadcastStart() {
-        // Send selected game dataset to all connected player devices
-        connections.forEach(conn => {
-            conn.send({ type: 'START_GAME', words: vocabPool });
-        });
-        
-        // Advance host interface to leaderboard view
-        document.getElementById("lobby-view").classList.add("hidden");
-        document.getElementById("game-view").classList.remove("hidden");
-        updateLeaderboardUI();
+    function initiateActiveQuiz() {
+        document.getElementById("panel-wait").classList.add("hidden");
+        document.getElementById("panel-quiz").classList.remove("hidden");
+        renderQuizQuestion();
     }
 
-    function updateLeaderboardUI() {
-        const tbody = document.getElementById("leaderboard-body");
-        tbody.innerHTML = "";
+    function renderQuizQuestion() {
+        interactionAllowed = true;
+        let wordData = vocabularySet[currentQuestionIndex];
+        document.getElementById("question-index-label").innerText = currentQuestionIndex + 1;
+        document.getElementById("french-target-word").innerText = wordData.french;
         
-        // Sort players descending by current score
-        let sortedPlayers = Object.entries(players).sort((a, b) => b[1] - a[1]);
+        let shuffledChoices = [wordData.english, ...wordData.wrongs].sort(() => 0.5 - Math.random());
+        let interfaceButtons = document.querySelectorAll("#interactive-options-box .option-item");
         
-        sortedPlayers.forEach(([name, score], index) => {
-            tbody.innerHTML += `
-                <tr>
-                    <td><strong>#${index + 1}</strong></td>
-                    <td>${name}</td>
-                    <td>${score} / 5</td>
-                </tr>
-            `;
+        interfaceButtons.forEach((btn, index) => {
+            btn.innerText = shuffledChoices[index];
+            btn.className = "option-item";
         });
+    }
+
+    function handleSubmission(selectedDiv) {
+        if (!interactionAllowed) return;
+        interactionAllowed = false;
+        
+        let targetWordData = vocabularySet[currentQuestionIndex];
+        if (selectedDiv.innerText === targetWordData.english) {
+            selectedDiv.classList.add("correct");
+            personalScore++;
+            document.getElementById("hud-score").innerText = personalScore;
+            connection.send({ type: 'SCORE_UPDATE', name: registeredName, score: personalScore });
+        } else {
+            selectedDiv.classList.add("wrong");
+            document.querySelectorAll("#interactive-options-box .option-item").forEach(box => {
+                if(box.innerText === targetWordData.english) box.classList.add("correct");
+            });
+        }
+
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < vocabularySet.length) {
+                renderQuizQuestion();
+            } else {
+                document.getElementById("panel-quiz").classList.add("hidden");
+                document.getElementById("panel-end").classList.remove("hidden");
+            }
+        }, 1600);
     }
 </script>
 </body>
