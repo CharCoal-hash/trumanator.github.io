@@ -223,7 +223,7 @@
     <!-- VIEW ZONE 1: ENTRY ROOM LOBBY -->
     <div id="stage-lobby">
         <h1>Jeu de Vocabulaire Français</h1>
-        <p class="subtitle">Scan the QR code to lock into the interactive session!</p>
+        <p class="subtitle">Scan the QR code to join.</p>
         
         <div class="split-lobby">
             <div class="qr-node">
@@ -232,7 +232,7 @@
             </div>
             
             <div class="roster-card">
-                <h3>Active Competitors <span id="lobby-count" style="color:var(--accent-blue)">0</span></h3>
+                <h3>Active PLayers <span id="lobby-count" style="color:var(--accent-blue)">0</span></h3>
                 <div class="badge-grid" id="lobby-grid-target"></div>
             </div>
         </div>
@@ -242,13 +242,13 @@
 
     <!-- VIEW ZONE 2: RUNTIME LEADERBOARD -->
     <div id="stage-scoreboard" class="hidden">
-        <h1 style="background: linear-gradient(to right, #f43f5e, #fb7185); -webkit-background-clip: text;">Live Match Standings</h1>
-        <p class="subtitle" style="margin-bottom: 20px;">Answering live on peripheral screens</p>
+        <h1 style="background: linear-gradient(to right, #f43f5e, #fb7185); -webkit-background-clip: text;">Standings</h1>
+        <p class="subtitle" style="margin-bottom: 20px;">Answering live on screens</p>
         <table>
             <thead>
                 <tr>
                     <th style="width: 15%">Rank</th>
-                    <th style="width: 60%">Competitor Name</th>
+                    <th style="width: 60%">Name</th>
                     <th style="width: 25%; text-align: right;">Total Points</th>
                 </tr>
             </thead>
@@ -259,7 +259,7 @@
 
 <script>
     // Link synchronization endpoint target
-    const DEPLOYED_PLAYER_URL = "https://charcoal-hash.github.io/trumanator.github.io/";
+    const DEPLOYED_PLAYER_URL = "https://charcoal-hash.github.io/trumanator.github.io/player.html";
 
     // Expanded Presentation Question Database Group
     const vocabPool = [
