@@ -22,6 +22,9 @@
         .opt-btn.good { background: #10b981 !important; border-color: #10b981 !important; }
         .opt-btn.bad { background: #ef4444 !important; border-color: #ef4444 !important; }
 
+        /* Text Input styling components */
+        .text-entry-container { margin: 15px 0; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; }
+
         .item-row { display: flex; gap: 10px; margin-top: 15px; min-height: 45px; justify-content: center; }
         .i-btn { padding: 10px 16px; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; }
         .i-strike { background: #ef4444; }
@@ -56,12 +59,18 @@
     </div>
 
     <div id="view-quiz" class="hidden">
-        <h3 style="margin: 0 0 5px 0;">Select Answer</h3>
+        <h3 id="quiz-title" style="margin: 0 0 5px 0;">Select Answer</h3>
+        
         <div class="choices" id="choices-box">
             <button class="opt-btn" onclick="selectChoice(this)"></button>
             <button class="opt-btn" onclick="selectChoice(this)"></button>
             <button class="opt-btn" onclick="selectChoice(this)"></button>
             <button class="opt-btn" onclick="selectChoice(this)"></button>
+        </div>
+
+        <div class="text-entry-container hidden" id="text-box-container">
+            <input type="text" id="text-answer-input" placeholder="Type answer in French..." autocomplete="off">
+            <button class="btn" onclick="submitTextAnswer()">Submit Answer</button>
         </div>
 
         <div style="font-size:0.85rem; font-weight:bold; color:#94a3b8; margin-top:15px; text-align:left;">Inventory:</div>
@@ -89,7 +98,7 @@
     const params = new URLSearchParams(window.location.search);
     const hostRoomId = params.get('room');
     
-    let peer, conn, myName = "", alive = false, activeChoiceBtn = null;
+    let peer, conn, myName = "", alive = false, activeChoiceBtn = null, currentMode = "choice";
     let inventory = [];
 
     if (!hostRoomId) document.getElementById("error-msg").innerText = "Error: Invalid Room URL parameter.";
@@ -120,7 +129,7 @@
                 
                 if (msg.type === 'ASK') {
                     if (msg.item) inventory.push(msg.item);
-                    displayQuestion(msg.options, msg.targets);
+                    displayQuestion(msg.qMode, msg.options, msg.targets);
                 }
                 if (msg.type === 'REVEAL') {
                     displayReveal(msg.correct);
@@ -138,9 +147,10 @@
         document.getElementById("view-wait").classList.remove("hidden");
     }
 
-    function displayQuestion(options, targets) {
+    function displayQuestion(qMode, options, targets) {
         alive = true;
         activeChoiceBtn = null;
+        currentMode = qMode || "choice";
         
         document.getElementById("hud-status").innerText = "Active";
         document.getElementById("hud-status").style.color = "#10b981";
@@ -150,12 +160,26 @@
         document.getElementById("strike-panel").classList.add("hidden");
         document.getElementById("quiz-waiting").classList.add("hidden");
         
-        let btns = document.querySelectorAll("#choices-box .opt-btn");
-        btns.forEach((b, i) => {
-            b.className = "opt-btn";
-            b.innerText = options[i];
-            b.disabled = false;
-        });
+        if (currentMode === "text") {
+            document.getElementById("quiz-title").innerText = "Type the Translation";
+            document.getElementById("choices-box").classList.add("hidden");
+            document.getElementById("text-box-container").classList.remove("hidden");
+            let inputField = document.getElementById("text-answer-input");
+            inputField.value = "";
+            inputField.disabled = false;
+            document.querySelector("#text-box-container button").disabled = false;
+        } else {
+            document.getElementById("quiz-title").innerText = "Select Answer";
+            document.getElementById("choices-box").classList.remove("hidden");
+            document.getElementById("text-box-container").classList.add("hidden");
+            
+            let btns = document.querySelectorAll("#choices-box .opt-btn");
+            btns.forEach((b, i) => {
+                b.className = "opt-btn";
+                b.innerText = options[i];
+                b.disabled = false;
+            });
+        }
 
         let dropdown = document.getElementById("target-select");
         dropdown.innerHTML = "";
@@ -212,7 +236,7 @@
     }
 
     function selectChoice(btn) {
-        if(!alive) return;
+        if(!alive || currentMode !== "choice") return;
         alive = false; 
         activeChoiceBtn = btn;
         btn.classList.add("picked");
@@ -220,23 +244,42 @@
         document.querySelectorAll("#choices-box .opt-btn").forEach(b => b.disabled = true);
         document.getElementById("quiz-waiting").classList.remove("hidden");
 
-        conn.send({
-            type: 'SUBMIT',
-            name: myName,
-            choice: btn.innerText
-        });
+        conn.send({ type: 'SUBMIT', name: myName, choice: btn.innerText });
+    }
+
+    function submitTextAnswer() {
+        if(!alive || currentMode !== "text") return;
+        let ans = document.getElementById("text-answer-input").value.trim();
+        if(!ans) return alert("Please type an answer first!");
+        
+        alive = false;
+        document.getElementById("text-answer-input").disabled = true;
+        document.querySelector("#text-box-container button").disabled = true;
+        document.getElementById("quiz-waiting").classList.remove("hidden");
+
+        conn.send({ type: 'SUBMIT', name: myName, choice: ans });
     }
 
     function displayReveal(correct) {
         alive = false;
         document.getElementById("quiz-waiting").classList.add("hidden");
         
-        let btns = document.querySelectorAll("#choices-box .opt-btn");
-        btns.forEach(b => {
-            b.classList.remove("picked");
-            if(b.innerText === correct) b.classList.add("good");
-            else if(b === activeChoiceBtn) b.classList.add("bad");
-        });
+        if (currentMode === "text") {
+            let entry = document.getElementById("text-answer-input").value.trim().toLowerCase();
+            let actual = correct.trim().toLowerCase();
+            if (entry === actual) {
+                alert("Correct! 🎉 +150 Points!");
+            } else {
+                alert(`Incorrect. The proper term was: ${correct}`);
+            }
+        } else {
+            let btns = document.querySelectorAll("#choices-box .opt-btn");
+            btns.forEach(b => {
+                b.classList.remove("picked");
+                if(b.innerText === correct) b.classList.add("good");
+                else if(b === activeChoiceBtn) b.classList.add("bad");
+            });
+        }
     }
 
     function showAlert(title, msg) {
