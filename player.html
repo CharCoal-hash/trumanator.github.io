@@ -29,13 +29,15 @@
         .quiz-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
         .option-item { background: white; border: 2px solid #e2e8f0; padding: 18px; font-size: 1.1rem; border-radius: 14px; cursor: pointer; color: var(--text-main); font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        /* Combat Mechanics Controls Layout */
-        .combat-action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; border-top: 2px dashed rgba(0,0,0,0.06); padding-top: 15px; }
-        .combat-btn { padding: 14px; font-weight: bold; font-size: 0.95rem; border-radius: 12px; border: none; cursor: pointer; color: white; }
-        .btn-strike { background: #ef4444; }
-        .btn-block { background: #3b82f6; }
+        /* Tactical Card Deck Panels */
+        .inventory-deck-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; color: #4f46e5; margin-top: 20px; text-align: left; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 12px;}
+        .inventory-row { display: flex; gap: 10px; margin-top: 8px; min-height: 52px; justify-content: flex-start; }
+        .item-card { padding: 12px 18px; color: white; font-weight: 800; border-radius: 10px; font-size: 0.9rem; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px; }
+        .card-strike { background: #f43f5e; }
+        .card-block { background: #3b82f6; }
 
-        .target-select-box { width: 100%; background: white; padding: 10px; border-radius: 10px; margin-top: 10px; font-weight: 600; font-size: 1rem; }
+        .target-dropdown-row { display: flex; flex-direction: column; background: rgba(255,255,255,0.7); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px; margin-top: 10px; text-align: left; }
+        .target-dropdown-row select { width: 100%; padding: 10px; font-size: 1rem; border-radius: 8px; margin-top: 6px; font-weight: 600; background: white; border: 1px solid #cbd5e1; }
 
         .shape { width: 16px; height: 16px; border-radius: 4px; }
         .shape-0 { background: #ef4444; } .shape-1 { background: #3b82f6; } .shape-2 { background: #eab308; } .shape-3 { background: #10b981; }
@@ -58,6 +60,7 @@
     </div>
 
     <div class="content-body">
+        <!-- SCREEN 1: JOIN -->
         <div id="panel-join">
             <h2>Rejoindre</h2>
             <p>Type your name to step into the shared presentation room.</p>
@@ -66,15 +69,17 @@
             <p id="network-status" style="margin-top: 15px; font-size: 0.85rem; font-weight: 600; color:#ef4444;"></p>
         </div>
 
+        <!-- SCREEN 2: WAITING INTERMISSION -->
         <div id="panel-wait" class="hidden">
             <h2 id="wait-title">Prêt !</h2>
             <p id="wait-desc">The match loop is controlled by the host room projector.</p>
             <div class="pulse-loader"></div>
         </div>
 
+        <!-- SCREEN 3: QUIZ CORE INTERACTION CONTROLS -->
         <div id="panel-quiz" class="hidden">
-            <h2 style="margin-bottom:0px;">Your Move</h2>
-            <p style="margin-top:0; font-size:0.9rem; color:#64748b;">Answer correctly or play a combat card</p>
+            <h2 style="margin-bottom:0px;">Select Answer</h2>
+            <p style="margin-top:0; font-size:0.9rem; color:#64748b;">Match the word displayed on screen</p>
             
             <div class="quiz-grid" id="interactive-options-box">
                 <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-0"></span> <span class="lbl-txt"></span></div>
@@ -83,17 +88,19 @@
                 <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-3"></span> <span class="lbl-txt"></span></div>
             </div>
 
-            <div class="combat-action-bar" id="combat-container">
-                <button class="combat-btn btn-strike" onclick="triggerStrikeAction()">💥 Strike</button>
-                <button class="combat-btn btn-block" onclick="triggerBlockAction()">🛡️ Block</button>
-            </div>
-            <div id="strike-target-zone" class="hidden">
-                <p style="margin: 5px 0; font-size:0.85rem; font-weight:bold;">Select Target:</p>
-                <select id="strike-target-dropdown" class="target-select-box"></select>
-                <button class="action-button" style="padding:10px; font-size:0.95rem; margin-top:8px; background:#ef4444;" onclick="finalizeStrikeDelivery()">Launch Strike</button>
+            <!-- COMBAT STACK INVENTORY -->
+            <div class="inventory-deck-title">Tactical Action Inventory</div>
+            <div class="inventory-row" id="inventory-slots-container"></div>
+            
+            <!-- Context Target Module Dropdowns -->
+            <div id="strike-context-panel" class="hidden target-dropdown-row">
+                <label style="font-weight: 700; color: #1e293b; font-size:0.9rem;">Target Victim Profile:</label>
+                <select id="strike-dropdown-node"></select>
+                <button class="action-button" style="padding:10px; font-size:0.9rem; margin-top:8px; background:#f43f5e;" onclick="executeStrikePayload()">Confirm Launch</button>
             </div>
         </div>
 
+        <!-- SCREEN 4: DISCONNECTED STATES -->
         <div id="panel-disconn" class="hidden">
             <h2 id="disconn-title">Disconnected</h2>
             <p id="disconn-desc">You are no longer connected to this room session.</p>
@@ -110,7 +117,10 @@
     let interactionAllowed = false;
     let currentlySelectedBtn = null;
 
-    if (!targetRoomId) document.getElementById("network-status").innerText = "⚠️ Missing Room Parameter.";
+    // Active permanent client storage systems
+    let dynamicInventory = [];
+
+    if (!targetRoomId) document.getElementById("network-status").innerText = "⚠️ Missing Room Link Param.";
 
     function connectToHost() {
         registeredName = document.getElementById("username").value.trim();
@@ -127,16 +137,18 @@
                     registeredName = payload.assignedName;
                     document.getElementById("hud-name").innerText = "👤 " + registeredName;
                     document.getElementById("panel-join").classList.add("hidden");
-                    setIntermissionState("Connected!", "The game loop is controlled by the host. Sit tight!");
+                    setIntermissionState("Connected!", "Waiting for the host to begin the match.");
                 }
                 if(payload.type === 'FORCE_RENAME') {
                     registeredName = payload.newName;
                     document.getElementById("hud-name").innerText = "👤 " + registeredName;
                 }
                 if(payload.type === 'KICKED') showDisconnectUI("Kicked", "You were removed from this session.");
-                if(payload.type === 'BANNED') showDisconnectUI("Banned", "Your network identification is banned.");
+                if(payload.type === 'BANNED') showDisconnectUI("Banned", "Your device profile has been banned.");
                 
                 if (payload.type === 'SHOW_QUESTION') {
+                    // Pull item drops if generated by the 15% drop algorithm
+                    if (payload.giftItem) dynamicInventory.push(payload.giftItem);
                     displayInputGrid(payload.options, payload.playersList);
                 }
                 if (payload.type === 'ROUND_ENDED') {
@@ -169,8 +181,7 @@
 
         document.getElementById("panel-wait").classList.add("hidden");
         document.getElementById("panel-quiz").classList.remove("hidden");
-        document.getElementById("combat-container").classList.remove("hidden");
-        document.getElementById("strike-target-zone").classList.add("hidden");
+        document.getElementById("strike-context-panel").classList.add("hidden");
         
         let items = document.querySelectorAll("#interactive-options-box .option-item");
         items.forEach((item, index) => {
@@ -178,19 +189,76 @@
             item.querySelector(".lbl-txt").innerText = choices[index];
         });
 
-        // Populate targets dropdown
-        let selectNode = document.getElementById("strike-target-dropdown");
+        // Parse target targets strings
+        let selectNode = document.getElementById("strike-dropdown-node");
         selectNode.innerHTML = "";
         if (targetsList.length === 0) {
-            selectNode.innerHTML = "<option>No available targets</option>";
+            selectNode.innerHTML = "<option value=''>No available targets</option>";
         } else {
             targetsList.forEach(p => { selectNode.innerHTML += `<option value="${p}">${p}</option>`; });
         }
+
+        renderInventoryDeckUI();
+    }
+
+    function renderInventoryDeckUI() {
+        let box = document.getElementById("inventory-slots-container");
+        box.innerHTML = "";
+        
+        if (dynamicInventory.length === 0) {
+            box.innerHTML = "<div style='color:#94a3b8; font-size:0.9rem; font-style:italic; padding-top:6px;'>Empty inventory slots</div>";
+            return;
+        }
+
+        dynamicInventory.forEach((item, idx) => {
+            if (item === "STRIKE") {
+                box.innerHTML += `<button class="item-card card-strike" onclick="useInventoryCard('STRIKE', ${idx})">💥 Strike Rocket</button>`;
+            } else if (item === "BLOCK") {
+                box.innerHTML += `<button class="item-card card-block" onclick="useInventoryCard('BLOCK', ${idx})">🛡️ Shield Mirror</button>`;
+            }
+        });
+    }
+
+    function useInventoryCard(type, index) {
+        if (!interactionAllowed && currentlySelectedBtn !== null) return; // Prevent playing after round transition locks
+        
+        if (type === "BLOCK") {
+            dynamicInventory.splice(index, 1);
+            renderInventoryDeckUI();
+            connection.send({ type: 'BLOCK_ACTIVATE', name: registeredName });
+            alert("🛡️ Shield Mirror deployed! Attacks on you this round will bounce back.");
+        } else if (type === "STRIKE") {
+            let selectNode = document.getElementById("strike-dropdown-node").value;
+            if(!selectNode) return alert("No valid targets available to attack!");
+            
+            // Unroll target prompt window
+            document.getElementById("strike-context-panel").classList.remove("hidden");
+            // Store target card index globally inside reference parameters
+            document.getElementById("strike-context-panel").dataset.activeIndex = index;
+        }
+    }
+
+    function executeStrikePayload() {
+        let index = parseInt(document.getElementById("strike-context-panel").dataset.activeIndex);
+        let selectedTarget = document.getElementById("strike-dropdown-node").value;
+        
+        if (!selectedTarget) return;
+        dynamicInventory.splice(index, 1);
+        
+        document.getElementById("strike-context-panel").classList.add("hidden");
+        renderInventoryDeckUI();
+
+        connection.send({
+            type: 'STRIKE_LAUNCH',
+            name: registeredName,
+            target: selectedTarget
+        });
+        alert(`💥 Strike rocket sent directly towards ${selectedTarget}!`);
     }
 
     function handleAnswerSelection(btn) {
         if(!interactionAllowed) return;
-        interactionAllowed = false;
+        interactionAllowed = false; // Lock answers options cleanly
         currentlySelectedBtn = btn;
         btn.classList.add("selected");
         
@@ -199,39 +267,6 @@
             name: registeredName,
             choice: btn.querySelector(".lbl-txt").innerText
         });
-    }
-
-    /* ACTIONS CALLED BY COMBAT CONTROLS PANEL */
-    function triggerBlockAction() {
-        if(!interactionAllowed) return;
-        interactionAllowed = false;
-        
-        document.getElementById("combat-container").classList.add("hidden");
-        connection.send({ type: 'BLOCK_ACTIVATE', name: registeredName });
-        setIntermissionState("Shield Deployed 🛡️", "You chose to block this round. Shield backfires will deflect enemy strikes!");
-    }
-
-    function triggerStrikeAction() {
-        if(!interactionAllowed) return;
-        document.getElementById("combat-container").classList.add("hidden");
-        document.getElementById("strike-target-zone").classList.remove("hidden");
-    }
-
-    function finalizeStrikeDelivery() {
-        if(!interactionAllowed) return;
-        let selectedTarget = document.getElementById("strike-target-dropdown").value;
-        if(!selectedTarget || selectedTarget === "No available targets") return alert("No player available to strike!");
-        
-        interactionAllowed = false;
-        document.getElementById("strike-target-zone").classList.add("hidden");
-        
-        connection.send({
-            type: 'STRIKE_LAUNCH',
-            name: registeredName,
-            target: selectedTarget
-        });
-
-        setIntermissionState("Strike Transmitted 💥", `You launched an attack targeting ${selectedTarget}!`);
     }
 
     function revealInputGridAnswer(correctString) {
@@ -249,7 +284,7 @@
 
         setTimeout(() => {
             if(document.getElementById("panel-quiz").classList.contains("hidden")) return;
-            setIntermissionState("Round Finished", "Gathering scores... Watch the presentation screen.");
+            setIntermissionState("Round Finished", "Calculating statistics... Check presentation screen.");
         }, 3000);
     }
 
