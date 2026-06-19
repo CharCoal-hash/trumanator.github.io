@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Quiz - Host Screen</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { var(--blue): #0055A5; --red: #EF4135; }
+        body { font-family: system-ui, sans-serif; background: #2c3e50; color: white; text-align: center; margin: 0; padding: 40px; }
+        .container { max-width: 900px; margin: 0 auto; background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); }
+        .lobby-layout { display: flex; justify-content: space-around; align-items: center; margin-top: 30px; flex-wrap: wrap; }
+        #qrcode { background: white; padding: 15px; border-radius: 10px; display: inline-block; }
+        .player-list { width: 400px; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 20px; min-height: 200px; text-align: left;}
+        .player-badge { background: #0055A5; padding: 10px 15px; margin: 8px 0; border-radius: 5px; display: flex; justify-content: space-between; font-weight: bold;}
+        .start-btn { background: #2ecc71; color: white; border: none; padding: 15px 40px; font-size: 1.5rem; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 30px; display: none;}
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.3rem; }
+        th, td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2); text-align: left; }
+        th { background: rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="lobby-view">
+        <h1>Jeu de Vocabulaire Français</h1>
+        <p style="font-size: 1.3rem;">Scan the QR code on your smartphone to join!</p>
+        
+        <div class="lobby-layout">
+            <div>
+                <div id="qrcode"></div>
+                <p id="room-id-log" style="font-family: monospace; margin-top:10px;">Generating Room...</p>
+            </div>
+            
+            <div class="player-list">
+                <h3>Joined Players (<span id="player-count">0</span>):</h3>
+                <div id="players-container"></div>
+            </div>
+        </div>
+        
+        <button id="start-btn" class="start-btn" onclick="broadcastStart()">START GAME</button>
+    </div>
+
+    <div id="game-view" class="hidden">
+        <h1>Live Leaderboard</h1>
+        <p>Players are answering questions on their phones right now!</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player Name</th>
+                    <th>Score (Max 5)</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // ⚠️ CRITICAL STEP: Put your deployed player.html address here!
+    const DEPLOYED_PLAYER_URL = "YOUR_PLAYER_URL_HERE"; 
+
+    const vocabPool = [
+        { french: "Bonjour", english: "Hello", wrongs: ["Goodbye", "Thank you", "Please"] },
+        { french: "Chat", english: "Cat", wrongs: ["Dog", "Bird", "Mouse"] },
+        { french: "Pomme", english: "Apple", wrongs: ["Banana", "Orange", "Grape"] },
+        { french: "Livre", english: "Book", wrongs: ["Pen", "Chair", "Table"] },
+        { french: "Voiture", english: "Car", wrongs: ["Bicycle", "Train", "Plane"] }
+    ];
+
+    // Generate a random 4-letter Room ID
+    const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
+    let players = {}; 
+    let connections = [];
+
+    // Initialize PeerJS Host
+    const peer = new Peer(roomId);
+
+    peer.on('open', (id) => {
+        document.getElementById("room-id-log").innerText = "Room Code: " + id;
+        
+        // Assemble final URL pointing to player file with custom room ID parameter
+        const joinUrl = `${DEPLOYED_PLAYER_URL}?room=${id}`;
+        
+        // Generate QR code targeting that URL
+        new QRCode(document.getElementById("qrcode"), {
+            text: joinUrl,
+            width: 200,
+            height: 200
+        });
+    });
+
+    peer.on('connection', (conn) => {
+        connections.push(conn);
+        
+        conn.on('data', (data) => {
+            if (data.type === 'JOIN') {
+                players[data.name] = 0; // Initialize player score at 0
+                updatePlayerLobbyUI();
+                
+                // Show start button as soon as 1 player joins
+                document.getElementById("start-btn").style.display = "inline-block";
+            }
+            if (data.type === 'SCORE_UPDATE') {
+                players[data.name] = data.score;
+                updateLeaderboardUI();
+            }
+        });
+    });
+
+    function updatePlayerLobbyUI() {
+        const container = document.getElementById("players-container");
+        container.innerHTML = "";
+        const keys = Object.keys(players);
+        document.getElementById("player-count").innerText = keys.length;
+        
+        keys.forEach(name => {
+            container.innerHTML += `<div class="player-badge"><span>👤 ${name}</span><span>Ready</span></div>`;
+        });
+    }
+
+    function broadcastStart() {
+        // Send selected game dataset to all connected player devices
+        connections.forEach(conn => {
+            conn.send({ type: 'START_GAME', words: vocabPool });
+        });
+        
+        // Advance host interface to leaderboard view
+        document.getElementById("lobby-view").classList.add("hidden");
+        document.getElementById("game-view").classList.remove("hidden");
+        updateLeaderboardUI();
+    }
+
+    function updateLeaderboardUI() {
+        const tbody = document.getElementById("leaderboard-body");
+        tbody.innerHTML = "";
+        
+        // Sort players descending by current score
+        let sortedPlayers = Object.entries(players).sort((a, b) => b[1] - a[1]);
+        
+        sortedPlayers.forEach(([name, score], index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>#${index + 1}</strong></td>
+                    <td>${name}</td>
+                    <td>${score} / 5</td>
+                </tr>
+            `;
+        });
+    }
+</script>
+</body>
+</html>
