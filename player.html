@@ -3,299 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Game Panel</title>
+    <title>French Quiz - Controller</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root {
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.4);
-            --text-main: #1e293b;
-            --accent: #4f46e5;
-        }
         * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 16px; min-height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(-45deg, #ff7b90, #ffae77, #7bc8ff, #9873ff); background-size: 400% 400%; animation: fluidGradient 12s ease infinite; }
-        @keyframes fluidGradient { 0% { background-position:0% 50%; } 50% { background-position:100% 50%; } 100% { background-position:0% 50%; } }
-
-        .app-window { width: 100%; max-width: 420px; background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); overflow: hidden; display: flex; flex-direction: column; }
-        .top-navbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: rgba(255, 255, 255, 0.4); border-bottom: 1px solid var(--glass-border); }
-        .nav-pill { background: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: #475569; }
+        body { margin: 0; padding: 15px; min-height: 100vh; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; }
+        .wrapper { width: 100%; max-width: 400px; background: #1e293b; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; }
         
-        .content-body { padding: 24px; text-align: center; }
-        h2 { color: var(--text-main); margin-top: 0; font-size: 1.6rem; font-weight: 800; }
-        p { color: #64748b; font-size: 1rem; line-height: 1.5; }
-        input[type="text"] { width: 100%; padding: 16px; font-size: 1.1rem; border: 2px solid #e2e8f0; border-radius: 14px; margin: 16px 0; outline: none; text-align: center; font-weight: 600; }
-        .action-button { width: 100%; background: var(--accent); color: white; border: none; padding: 16px; font-size: 1.1rem; font-weight: 700; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-
-        .quiz-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
-        .option-item { background: white; border: 2px solid #e2e8f0; padding: 18px; font-size: 1.1rem; border-radius: 14px; cursor: pointer; color: var(--text-main); font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 30px; }
         
-        /* Tactical Card Deck Panels */
-        .inventory-deck-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; color: #4f46e5; margin-top: 20px; text-align: left; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 12px;}
-        .inventory-row { display: flex; gap: 10px; margin-top: 8px; min-height: 52px; justify-content: flex-start; }
-        .item-card { padding: 12px 18px; color: white; font-weight: 800; border-radius: 10px; font-size: 0.9rem; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px; }
-        .card-strike { background: #f43f5e; }
-        .card-block { background: #3b82f6; }
+        input[type="text"] { width: 100%; padding: 14px; font-size: 1.1rem; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: white; margin-bottom: 15px; text-align: center; }
+        .btn { width: 100%; background: #4f46e5; color: white; border: none; padding: 14px; font-size: 1.1rem; font-weight: bold; border-radius: 10px; cursor: pointer; }
 
-        .target-dropdown-row { display: flex; flex-direction: column; background: rgba(255,255,255,0.7); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px; margin-top: 10px; text-align: left; }
-        .target-dropdown-row select { width: 100%; padding: 10px; font-size: 1rem; border-radius: 8px; margin-top: 6px; font-weight: 600; background: white; border: 1px solid #cbd5e1; }
+        .choices { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .opt-btn { background: #334155; border: 2px solid #475569; padding: 16px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; }
+        
+        .opt-btn.picked { background: #1e1b4b !important; border-color: #6366f1 !important; }
+        .opt-btn.good { background: #10b981 !important; border-color: #10b981 !important; }
+        .opt-btn.bad { background: #ef4444 !important; border-color: #ef4444 !important; }
 
-        .shape { width: 16px; height: 16px; border-radius: 4px; }
-        .shape-0 { background: #ef4444; } .shape-1 { background: #3b82f6; } .shape-2 { background: #eab308; } .shape-3 { background: #10b981; }
+        .item-row { display: flex; gap: 10px; margin-top: 15px; min-height: 45px; justify-content: center; }
+        .i-btn { padding: 10px 16px; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; }
+        .i-strike { background: #ef4444; }
+        .i-block { background: #3b82f6; }
 
-        .option-item.selected { background: #1e293b !important; color: white !important; border-color: #1e293b !important; }
-        .option-item.correct { background: #10b981 !important; border-color: #10b981 !important; color: white !important; }
-        .option-item.wrong { background: #ef4444 !important; border-color: #ef4444 !important; color: white !important; }
+        .target-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; margin-top: 10px; text-align: left; }
+        .target-box select { width: 100%; padding: 8px; border-radius: 6px; margin-top: 5px; background: #0f172a; color: white; border: 1px solid #475569; font-weight: bold; }
 
         .hidden { display: none !important; }
-        .pulse-loader { width: 60px; height: 60px; background: var(--accent); border-radius: 50%; margin: 30px auto; animation: pulse 1.8s infinite ease-in-out; }
-        @keyframes pulse { 0%, 100% { transform: scale(0.6); opacity: 0.4; } 50% { transform: scale(1); opacity: 1; } }
+        .loader { width: 40px; height: 40px; border: 4px solid #475569; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="app-window">
-    <div class="top-navbar">
-        <div class="nav-pill" id="hud-name">🇫🇷 Join</div>
-        <div class="nav-pill" style="background:#fef3c7; color:#b45309;" id="hud-status-pill">Lobby</div>
+<div class="wrapper">
+    <div class="header">
+        <div id="hud-user">Player</div>
+        <div id="hud-status" style="color:#fbbf24;">Lobby</div>
     </div>
 
-    <div class="content-body">
-        <!-- SCREEN 1: JOIN -->
-        <div id="panel-join">
-            <h2>Rejoindre</h2>
-            <p>Type your name to step into the shared presentation room.</p>
-            <input type="text" id="username" placeholder="Your Name" maxlength="14" autocomplete="off">
-            <button class="action-button" onclick="connectToHost()">Enter Game</button>
-            <p id="network-status" style="margin-top: 15px; font-size: 0.85rem; font-weight: 600; color:#ef4444;"></p>
+    <!-- REGISTER VIEW -->
+    <div id="view-join">
+        <h2>Join Game</h2>
+        <input type="text" id="name-input" placeholder="Enter Nickname" maxlength="12">
+        <button class="btn" onclick="connect()">Connect</button>
+        <p id="error-msg" style="color:#ef4444; margin-top:10px; font-size:0.9rem;"></p>
+    </div>
+
+    <!-- INTERMISSION LOADING BANNER -->
+    <div id="view-wait" class="hidden">
+        <h3 id="wait-msg">Connected</h3>
+        <div class="loader"></div>
+    </div>
+
+    <!-- QUIZ SYSTEM ENGINE CONTAINER -->
+    <div id="view-quiz" class="hidden">
+        <h3 style="margin: 0 0 5px 0;">Select Answer</h3>
+        <div class="choices" id="choices-box">
+            <button class="opt-btn" onclick="selectChoice(this)"></button>
+            <button class="opt-btn" onclick="selectChoice(this)"></button>
+            <button class="opt-btn" onclick="selectChoice(this)"></button>
+            <button class="opt-btn" onclick="selectChoice(this)"></button>
         </div>
 
-        <!-- SCREEN 2: WAITING INTERMISSION -->
-        <div id="panel-wait" class="hidden">
-            <h2 id="wait-title">Prêt !</h2>
-            <p id="wait-desc">The match loop is controlled by the host room projector.</p>
-            <div class="pulse-loader"></div>
+        <div style="font-size:0.85rem; font-weight:bold; color:#94a3b8; margin-top:15px; text-align:left;">Inventory:</div>
+        <div class="item-row" id="inventory-box"></div>
+        
+        <div id="strike-panel" class="hidden target-box">
+            <label style="font-size:0.85rem; font-weight:bold;">Select Target:</label>
+            <select id="target-select"></select>
+            <button class="btn" style="padding:8px; font-size:0.9rem; margin-top:8px; background:#ef4444;" onclick="fireStrike()">Confirm Strike</button>
         </div>
-
-        <!-- SCREEN 3: QUIZ CORE INTERACTION CONTROLS -->
-        <div id="panel-quiz" class="hidden">
-            <h2 style="margin-bottom:0px;">Select Answer</h2>
-            <p style="margin-top:0; font-size:0.9rem; color:#64748b;">Match the word displayed on screen</p>
-            
-            <div class="quiz-grid" id="interactive-options-box">
-                <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-0"></span> <span class="lbl-txt"></span></div>
-                <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-1"></span> <span class="lbl-txt"></span></div>
-                <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-2"></span> <span class="lbl-txt"></span></div>
-                <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-3"></span> <span class="lbl-txt"></span></div>
-            </div>
-
-            <!-- COMBAT STACK INVENTORY -->
-            <div class="inventory-deck-title">Tactical Action Inventory</div>
-            <div class="inventory-row" id="inventory-slots-container"></div>
-            
-            <!-- Context Target Module Dropdowns -->
-            <div id="strike-context-panel" class="hidden target-dropdown-row">
-                <label style="font-weight: 700; color: #1e293b; font-size:0.9rem;">Target Victim Profile:</label>
-                <select id="strike-dropdown-node"></select>
-                <button class="action-button" style="padding:10px; font-size:0.9rem; margin-top:8px; background:#f43f5e;" onclick="executeStrikePayload()">Confirm Launch</button>
-            </div>
+        
+        <!-- WAITING FOR HOST REVEAL INDICATOR (Prevents instant "Round Finished" crash) -->
+        <div id="quiz-waiting" class="hidden" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+            <div class="loader" style="width:24px; height:24px; margin:5px auto;"></div>
+            <span style="font-size:0.85rem; color:#94a3b8;">Answer locked. Waiting for host...</span>
         </div>
+    </div>
 
-        <!-- SCREEN 4: DISCONNECTED STATES -->
-        <div id="panel-disconn" class="hidden">
-            <h2 id="disconn-title">Disconnected</h2>
-            <p id="disconn-desc">You are no longer connected to this room session.</p>
-        </div>
+    <!-- GENERIC DISCONNECT DISPLAY -->
+    <div id="view-alert" class="hidden">
+        <h2 id="alert-title">Disconnected</h2>
+        <p id="alert-desc">Lost connection to server.</p>
     </div>
 </div>
 
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const targetRoomId = urlParams.get('room');
+    const params = new URLSearchParams(window.location.search);
+    const hostRoomId = params.get('room');
     
-    let peer, connection;
-    let registeredName = "";
-    let interactionAllowed = false;
-    let currentlySelectedBtn = null;
+    let peer, conn, myName = "", alive = false, activeChoiceBtn = null;
+    let inventory = [];
 
-    // Active permanent client storage systems
-    let dynamicInventory = [];
+    if (!hostRoomId) document.getElementById("error-msg").innerText = "Error: Invalid Room URL parameter.";
 
-    if (!targetRoomId) document.getElementById("network-status").innerText = "⚠️ Missing Room Link Param.";
-
-    function connectToHost() {
-        registeredName = document.getElementById("username").value.trim();
-        if(!registeredName) return alert("Please specify a player nickname.");
-        document.getElementById("network-status").innerText = "Connecting...";
-        peer = new Peer();
+    function connect() {
+        myName = document.getElementById("name-input").value.trim();
+        if(!myName) return alert("Enter a name");
+        document.getElementById("error-msg").innerText = "Connecting...";
         
+        peer = new Peer();
         peer.on('open', () => {
-            connection = peer.connect(targetRoomId);
-            connection.on('open', () => { connection.send({ type: 'JOIN', name: registeredName }); });
+            conn = peer.connect(hostRoomId);
+            conn.on('open', () => { conn.send({ type: 'JOIN', name: myName }); });
 
-            connection.on('data', (payload) => {
-                if(payload.type === 'JOIN_CONFIRM') {
-                    registeredName = payload.assignedName;
-                    document.getElementById("hud-name").innerText = "👤 " + registeredName;
-                    document.getElementById("panel-join").classList.add("hidden");
-                    setIntermissionState("Connected!", "Waiting for the host to begin the match.");
+            conn.on('data', (msg) => {
+                if(msg.type === 'JOIN_OK') {
+                    myName = msg.name;
+                    document.getElementById("hud-user").innerText = myName;
+                    document.getElementById("view-join").classList.add("hidden");
+                    showWait("Waiting for Host", "Connected to session. Standby for start.");
                 }
-                if(payload.type === 'FORCE_RENAME') {
-                    registeredName = payload.newName;
-                    document.getElementById("hud-name").innerText = "👤 " + registeredName;
+                if(msg.type === 'RENAME') {
+                    myName = msg.name;
+                    document.getElementById("hud-user").innerText = myName;
                 }
-                if(payload.type === 'KICKED') showDisconnectUI("Kicked", "You were removed from this session.");
-                if(payload.type === 'BANNED') showDisconnectUI("Banned", "Your device profile has been banned.");
+                if(msg.type === 'KICK') showAlert("Kicked", "You were removed.");
+                if(msg.type === 'BANNED') showAlert("Banned", "Your device is banned.");
                 
-                if (payload.type === 'SHOW_QUESTION') {
-                    // Pull item drops if generated by the 15% drop algorithm
-                    if (payload.giftItem) dynamicInventory.push(payload.giftItem);
-                    displayInputGrid(payload.options, payload.playersList);
+                if (msg.type === 'ASK') {
+                    if (msg.item) inventory.push(msg.item);
+                    displayQuestion(msg.options, msg.targets);
                 }
-                if (payload.type === 'ROUND_ENDED') {
-                    revealInputGridAnswer(payload.correct);
+                if (msg.type === 'REVEAL') {
+                    displayReveal(msg.correct);
                 }
             });
-
-            connection.on('close', () => { showDisconnectUI("Disconnected", "Server closed connection."); });
+            conn.on('close', () => { showAlert("Disconnected", "Host closed connection."); });
         });
     }
 
-    function setIntermissionState(title, message) {
-        document.getElementById("hud-status-pill").innerText = "Waiting";
-        document.getElementById("hud-status-pill").style.background = "#fef3c7";
-        document.getElementById("hud-status-pill").style.color = "#b45309";
-        
-        document.getElementById("panel-quiz").classList.add("hidden");
-        document.getElementById("wait-title").innerText = title;
-        document.getElementById("wait-desc").innerText = message;
-        document.getElementById("panel-wait").classList.remove("hidden");
+    function showWait(title, message) {
+        document.getElementById("hud-status").innerText = "Waiting";
+        document.getElementById("hud-status").style.color = "#fbbf24";
+        document.getElementById("view-quiz").classList.add("hidden");
+        document.getElementById("wait-msg").innerText = title;
+        document.getElementById("view-wait").classList.remove("hidden");
     }
 
-    function displayInputGrid(choices, targetsList) {
-        interactionAllowed = true;
-        currentlySelectedBtn = null;
+    function displayQuestion(options, targets) {
+        alive = true;
+        activeChoiceBtn = null;
         
-        document.getElementById("hud-status-pill").innerText = "ACTIVE";
-        document.getElementById("hud-status-pill").style.background = "#d1fae5";
-        document.getElementById("hud-status-pill").style.color = "#065f46";
+        document.getElementById("hud-status").innerText = "Active";
+        document.getElementById("hud-status").style.color = "#10b981";
 
-        document.getElementById("panel-wait").classList.add("hidden");
-        document.getElementById("panel-quiz").classList.remove("hidden");
-        document.getElementById("strike-context-panel").classList.add("hidden");
+        document.getElementById("view-wait").classList.add("hidden");
+        document.getElementById("view-quiz").classList.remove("hidden");
+        document.getElementById("strike-panel").classList.add("hidden");
+        document.getElementById("quiz-waiting").classList.add("hidden");
         
-        let items = document.querySelectorAll("#interactive-options-box .option-item");
-        items.forEach((item, index) => {
-            item.className = "option-item";
-            item.querySelector(".lbl-txt").innerText = choices[index];
+        let btns = document.querySelectorAll("#choices-box .opt-btn");
+        btns.forEach((b, i) => {
+            b.className = "opt-btn";
+            b.innerText = options[i];
+            b.disabled = false;
         });
 
-        // Parse target targets strings
-        let selectNode = document.getElementById("strike-dropdown-node");
-        selectNode.innerHTML = "";
-        if (targetsList.length === 0) {
-            selectNode.innerHTML = "<option value=''>No available targets</option>";
+        let dropdown = document.getElementById("target-select");
+        dropdown.innerHTML = "";
+        if(targets.length === 0) {
+            dropdown.innerHTML = "<option value=''>No targets available</option>";
         } else {
-            targetsList.forEach(p => { selectNode.innerHTML += `<option value="${p}">${p}</option>`; });
+            targets.forEach(t => dropdown.innerHTML += `<option value="${t}">${t}</option>`);
         }
 
-        renderInventoryDeckUI();
+        renderItems();
     }
 
-    function renderInventoryDeckUI() {
-        let box = document.getElementById("inventory-slots-container");
+    function renderItems() {
+        let box = document.getElementById("inventory-box");
         box.innerHTML = "";
-        
-        if (dynamicInventory.length === 0) {
-            box.innerHTML = "<div style='color:#94a3b8; font-size:0.9rem; font-style:italic; padding-top:6px;'>Empty inventory slots</div>";
+        if (inventory.length === 0) {
+            box.innerHTML = "<span style='color:#475569; font-size:0.85rem; font-style:italic;'>No items</span>";
             return;
         }
-
-        dynamicInventory.forEach((item, idx) => {
+        inventory.forEach((item, idx) => {
             if (item === "STRIKE") {
-                box.innerHTML += `<button class="item-card card-strike" onclick="useInventoryCard('STRIKE', ${idx})">💥 Strike Rocket</button>`;
+                box.innerHTML += `<button class="i-btn i-strike" onclick="useItem('STRIKE', ${idx})">💥 Strike</button>`;
             } else if (item === "BLOCK") {
-                box.innerHTML += `<button class="item-card card-block" onclick="useInventoryCard('BLOCK', ${idx})">🛡️ Shield Mirror</button>`;
+                box.innerHTML += `<button class="i-btn i-block" onclick="useItem('BLOCK', ${idx})">🛡️ Block</button>`;
             }
         });
     }
 
-    function useInventoryCard(type, index) {
-        if (!interactionAllowed && currentlySelectedBtn !== null) return; // Prevent playing after round transition locks
-        
+    function useItem(type, idx) {
         if (type === "BLOCK") {
-            dynamicInventory.splice(index, 1);
-            renderInventoryDeckUI();
-            connection.send({ type: 'BLOCK_ACTIVATE', name: registeredName });
-            alert("🛡️ Shield Mirror deployed! Attacks on you this round will bounce back.");
+            inventory.splice(idx, 1);
+            renderItems();
+            conn.send({ type: 'USE_BLOCK', name: myName });
+            alert("🛡️ Block active! Attacks on you this round will backfire.");
         } else if (type === "STRIKE") {
-            let selectNode = document.getElementById("strike-dropdown-node").value;
-            if(!selectNode) return alert("No valid targets available to attack!");
-            
-            // Unroll target prompt window
-            document.getElementById("strike-context-panel").classList.remove("hidden");
-            // Store target card index globally inside reference parameters
-            document.getElementById("strike-context-panel").dataset.activeIndex = index;
+            let val = document.getElementById("target-select").value;
+            if(!val) return alert("No valid target available!");
+            document.getElementById("strike-panel").classList.remove("hidden");
+            document.getElementById("strike-panel").dataset.idx = idx;
         }
     }
 
-    function executeStrikePayload() {
-        let index = parseInt(document.getElementById("strike-context-panel").dataset.activeIndex);
-        let selectedTarget = document.getElementById("strike-dropdown-node").value;
+    function fireStrike() {
+        let idx = parseInt(document.getElementById("strike-panel").dataset.idx);
+        let target = document.getElementById("target-select").value;
+        if (!target) return;
         
-        if (!selectedTarget) return;
-        dynamicInventory.splice(index, 1);
-        
-        document.getElementById("strike-context-panel").classList.add("hidden");
-        renderInventoryDeckUI();
+        inventory.splice(idx, 1);
+        document.getElementById("strike-panel").classList.add("hidden");
+        renderItems();
 
-        connection.send({
-            type: 'STRIKE_LAUNCH',
-            name: registeredName,
-            target: selectedTarget
-        });
-        alert(`💥 Strike rocket sent directly towards ${selectedTarget}!`);
+        conn.send({ type: 'USE_STRIKE', name: myName, target: target });
+        alert(`💥 Strike launched at ${target}!`);
     }
 
-    function handleAnswerSelection(btn) {
-        if(!interactionAllowed) return;
-        interactionAllowed = false; // Lock answers options cleanly
-        currentlySelectedBtn = btn;
-        btn.classList.add("selected");
+    function selectChoice(btn) {
+        if(!alive) return;
+        alive = false; 
+        activeChoiceBtn = btn;
+        btn.classList.add("picked");
         
-        connection.send({
-            type: 'ANSWER_SUBMIT',
-            name: registeredName,
-            choice: btn.querySelector(".lbl-txt").innerText
+        // Lock all answer option buttons visually
+        document.querySelectorAll("#choices-box .opt-btn").forEach(b => b.disabled = true);
+        
+        // Show the localized sub-loader instead of kicking to a generic finish screen
+        document.getElementById("quiz-waiting").classList.remove("hidden");
+
+        conn.send({
+            type: 'SUBMIT',
+            name: myName,
+            choice: btn.innerText
         });
     }
 
-    function revealInputGridAnswer(correctString) {
-        interactionAllowed = false;
-        let items = document.querySelectorAll("#interactive-options-box .option-item");
-        items.forEach(item => {
-            let itemText = item.querySelector(".lbl-txt").innerText;
-            item.classList.remove("selected");
-            if(itemText === correctString) {
-                item.classList.add("correct");
-            } else if(item === currentlySelectedBtn) {
-                item.classList.add("wrong");
-            }
+    function displayReveal(correct) {
+        alive = false;
+        document.getElementById("quiz-waiting").classList.add("hidden");
+        
+        let btns = document.querySelectorAll("#choices-box .opt-btn");
+        btns.forEach(b => {
+            b.classList.remove("picked");
+            if(b.innerText === correct) b.classList.add("good");
+            else if(b === activeChoiceBtn) b.classList.add("bad");
         });
 
+        // Hold view on the device screen for 3 seconds before transitioning to intermission
         setTimeout(() => {
-            if(document.getElementById("panel-quiz").classList.contains("hidden")) return;
-            setIntermissionState("Round Finished", "Calculating statistics... Check presentation screen.");
+            if(!document.getElementById("view-quiz").classList.contains("hidden")) {
+                showWait("Round Finished", "Check host screen for stats updates.");
+            }
         }, 3000);
     }
 
-    function showDisconnectUI(title, msg) {
-        document.getElementById("panel-join").classList.add("hidden");
-        document.getElementById("panel-wait").classList.add("hidden");
-        document.getElementById("panel-quiz").classList.add("hidden");
-        document.getElementById("disconn-title").innerText = title;
-        document.getElementById("disconn-desc").innerText = msg;
-        document.getElementById("panel-disconn").classList.remove("hidden");
-        if(connection) connection.close();
+    function showAlert(title, msg) {
+        document.getElementById("view-join").classList.add("hidden");
+        document.getElementById("view-wait").classList.add("hidden");
+        document.getElementById("view-quiz").classList.add("hidden");
+        document.getElementById("alert-title").innerText = title;
+        document.getElementById("alert-desc").innerText = msg;
+        document.getElementById("view-alert").classList.remove("hidden");
+        if(conn) conn.close();
     }
 </script>
 </body>
