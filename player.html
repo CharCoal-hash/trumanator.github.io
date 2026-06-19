@@ -12,37 +12,31 @@
             --text-main: #1e293b;
             --accent: #4f46e5;
         }
-
         * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            margin: 0; padding: 16px; min-height: 100vh; display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(-45deg, #ff7b90, #ffae77, #7bc8ff, #9873ff); background-size: 400% 400%;
-            animation: fluidGradient 12s ease infinite;
-        }
-
+        body { margin: 0; padding: 16px; min-height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(-45deg, #ff7b90, #ffae77, #7bc8ff, #9873ff); background-size: 400% 400%; animation: fluidGradient 12s ease infinite; }
         @keyframes fluidGradient { 0% { background-position:0% 50%; } 50% { background-position:100% 50%; } 100% { background-position:0% 50%; } }
 
-        .app-window {
-            width: 100%; max-width: 420px; background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); overflow: hidden; display: flex; flex-direction: column;
-        }
-
+        .app-window { width: 100%; max-width: 420px; background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); overflow: hidden; display: flex; flex-direction: column; }
         .top-navbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: rgba(255, 255, 255, 0.4); border-bottom: 1px solid var(--glass-border); }
         .nav-pill { background: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: #475569; }
         
         .content-body { padding: 24px; text-align: center; }
         h2 { color: var(--text-main); margin-top: 0; font-size: 1.6rem; font-weight: 800; }
         p { color: #64748b; font-size: 1rem; line-height: 1.5; }
-
         input[type="text"] { width: 100%; padding: 16px; font-size: 1.1rem; border: 2px solid #e2e8f0; border-radius: 14px; margin: 16px 0; outline: none; text-align: center; font-weight: 600; }
-        
         .action-button { width: 100%; background: var(--accent); color: white; border: none; padding: 16px; font-size: 1.1rem; font-weight: 700; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
 
-        .quiz-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-        .option-item { background: white; border: 2px solid #e2e8f0; padding: 20px; font-size: 1.2rem; border-radius: 14px; cursor: pointer; color: var(--text-main); font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .option-item:active { transform: scale(0.97); }
+        .quiz-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        .option-item { background: white; border: 2px solid #e2e8f0; padding: 18px; font-size: 1.1rem; border-radius: 14px; cursor: pointer; color: var(--text-main); font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
+        /* Combat Mechanics Controls Layout */
+        .combat-action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; border-top: 2px dashed rgba(0,0,0,0.06); padding-top: 15px; }
+        .combat-btn { padding: 14px; font-weight: bold; font-size: 0.95rem; border-radius: 12px; border: none; cursor: pointer; color: white; }
+        .btn-strike { background: #ef4444; }
+        .btn-block { background: #3b82f6; }
+
+        .target-select-box { width: 100%; background: white; padding: 10px; border-radius: 10px; margin-top: 10px; font-weight: 600; font-size: 1rem; }
+
         .shape { width: 16px; height: 16px; border-radius: 4px; }
         .shape-0 { background: #ef4444; } .shape-1 { background: #3b82f6; } .shape-2 { background: #eab308; } .shape-3 { background: #10b981; }
 
@@ -74,18 +68,29 @@
 
         <div id="panel-wait" class="hidden">
             <h2 id="wait-title">Prêt !</h2>
-            <p id="wait-desc">Look up at the main projection screen. The next question will appear there!</p>
+            <p id="wait-desc">The match loop is controlled by the host room projector.</p>
             <div class="pulse-loader"></div>
         </div>
 
         <div id="panel-quiz" class="hidden">
-            <h2 style="margin-bottom:5px;">Select Your Answer</h2>
-            <p style="margin-top:0; color:#64748b;">Look at the main stage options to choose</p>
+            <h2 style="margin-bottom:0px;">Your Move</h2>
+            <p style="margin-top:0; font-size:0.9rem; color:#64748b;">Answer correctly or play a combat card</p>
+            
             <div class="quiz-grid" id="interactive-options-box">
-                <div class="option-item" onclick="handleSubmission(this, 0)"><span class="shape shape-0"></span> <span class="lbl-txt"></span></div>
-                <div class="option-item" onclick="handleSubmission(this, 1)"><span class="shape shape-1"></span> <span class="lbl-txt"></span></div>
-                <div class="option-item" onclick="handleSubmission(this, 2)"><span class="shape shape-2"></span> <span class="lbl-txt"></span></div>
-                <div class="option-item" onclick="handleSubmission(this, 3)"><span class="shape shape-3"></span> <span class="lbl-txt"></span></div>
+                <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-0"></span> <span class="lbl-txt"></span></div>
+                <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-1"></span> <span class="lbl-txt"></span></div>
+                <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-2"></span> <span class="lbl-txt"></span></div>
+                <div class="option-item" onclick="handleAnswerSelection(this)"><span class="shape shape-3"></span> <span class="lbl-txt"></span></div>
+            </div>
+
+            <div class="combat-action-bar" id="combat-container">
+                <button class="combat-btn btn-strike" onclick="triggerStrikeAction()">💥 Strike</button>
+                <button class="combat-btn btn-block" onclick="triggerBlockAction()">🛡️ Block</button>
+            </div>
+            <div id="strike-target-zone" class="hidden">
+                <p style="margin: 5px 0; font-size:0.85rem; font-weight:bold;">Select Target:</p>
+                <select id="strike-target-dropdown" class="target-select-box"></select>
+                <button class="action-button" style="padding:10px; font-size:0.95rem; margin-top:8px; background:#ef4444;" onclick="finalizeStrikeDelivery()">Launch Strike</button>
             </div>
         </div>
 
@@ -105,23 +110,17 @@
     let interactionAllowed = false;
     let currentlySelectedBtn = null;
 
-    if (!targetRoomId) {
-        document.getElementById("network-status").innerText = "⚠️ Missing Room Parameter inside Link.";
-    }
+    if (!targetRoomId) document.getElementById("network-status").innerText = "⚠️ Missing Room Parameter.";
 
     function connectToHost() {
         registeredName = document.getElementById("username").value.trim();
         if(!registeredName) return alert("Please specify a player nickname.");
-        
         document.getElementById("network-status").innerText = "Connecting...";
         peer = new Peer();
         
         peer.on('open', () => {
             connection = peer.connect(targetRoomId);
-            
-            connection.on('open', () => {
-                connection.send({ type: 'JOIN', name: registeredName });
-            });
+            connection.on('open', () => { connection.send({ type: 'JOIN', name: registeredName }); });
 
             connection.on('data', (payload) => {
                 if(payload.type === 'JOIN_CONFIRM') {
@@ -130,32 +129,22 @@
                     document.getElementById("panel-join").classList.add("hidden");
                     setIntermissionState("Connected!", "The game loop is controlled by the host. Sit tight!");
                 }
-                
                 if(payload.type === 'FORCE_RENAME') {
                     registeredName = payload.newName;
                     document.getElementById("hud-name").innerText = "👤 " + registeredName;
                 }
-
-                if(payload.type === 'KICKED') {
-                    showDisconnectUI("Kicked", "You were removed from this session by the presentation host.");
-                }
-
-                if(payload.type === 'BANNED') {
-                    showDisconnectUI("Banned", "Your network identification is banned from accessing this room.");
-                }
-
+                if(payload.type === 'KICKED') showDisconnectUI("Kicked", "You were removed from this session.");
+                if(payload.type === 'BANNED') showDisconnectUI("Banned", "Your network identification is banned.");
+                
                 if (payload.type === 'SHOW_QUESTION') {
-                    displayInputGrid(payload.options);
+                    displayInputGrid(payload.options, payload.playersList);
                 }
-
                 if (payload.type === 'ROUND_ENDED') {
                     revealInputGridAnswer(payload.correct);
                 }
             });
 
-            connection.on('close', () => {
-                showDisconnectUI("Disconnected", "The connection to the classroom server has timed out or closed.");
-            });
+            connection.on('close', () => { showDisconnectUI("Disconnected", "Server closed connection."); });
         });
     }
 
@@ -170,7 +159,7 @@
         document.getElementById("panel-wait").classList.remove("hidden");
     }
 
-    function displayInputGrid(choices) {
+    function displayInputGrid(choices, targetsList) {
         interactionAllowed = true;
         currentlySelectedBtn = null;
         
@@ -180,33 +169,74 @@
 
         document.getElementById("panel-wait").classList.add("hidden");
         document.getElementById("panel-quiz").classList.remove("hidden");
+        document.getElementById("combat-container").classList.remove("hidden");
+        document.getElementById("strike-target-zone").classList.add("hidden");
         
         let items = document.querySelectorAll("#interactive-options-box .option-item");
         items.forEach((item, index) => {
             item.className = "option-item";
             item.querySelector(".lbl-txt").innerText = choices[index];
         });
+
+        // Populate targets dropdown
+        let selectNode = document.getElementById("strike-target-dropdown");
+        selectNode.innerHTML = "";
+        if (targetsList.length === 0) {
+            selectNode.innerHTML = "<option>No available targets</option>";
+        } else {
+            targetsList.forEach(p => { selectNode.innerHTML += `<option value="${p}">${p}</option>`; });
+        }
     }
 
-    function handleSubmission(btn, index) {
+    function handleAnswerSelection(btn) {
         if(!interactionAllowed) return;
         interactionAllowed = false;
-        
         currentlySelectedBtn = btn;
         btn.classList.add("selected");
         
-        let choiceText = btn.querySelector(".lbl-txt").innerText;
         connection.send({
             type: 'ANSWER_SUBMIT',
             name: registeredName,
-            choice: choiceText
+            choice: btn.querySelector(".lbl-txt").innerText
         });
+    }
+
+    /* ACTIONS CALLED BY COMBAT CONTROLS PANEL */
+    function triggerBlockAction() {
+        if(!interactionAllowed) return;
+        interactionAllowed = false;
+        
+        document.getElementById("combat-container").classList.add("hidden");
+        connection.send({ type: 'BLOCK_ACTIVATE', name: registeredName });
+        setIntermissionState("Shield Deployed 🛡️", "You chose to block this round. Shield backfires will deflect enemy strikes!");
+    }
+
+    function triggerStrikeAction() {
+        if(!interactionAllowed) return;
+        document.getElementById("combat-container").classList.add("hidden");
+        document.getElementById("strike-target-zone").classList.remove("hidden");
+    }
+
+    function finalizeStrikeDelivery() {
+        if(!interactionAllowed) return;
+        let selectedTarget = document.getElementById("strike-target-dropdown").value;
+        if(!selectedTarget || selectedTarget === "No available targets") return alert("No player available to strike!");
+        
+        interactionAllowed = false;
+        document.getElementById("strike-target-zone").classList.add("hidden");
+        
+        connection.send({
+            type: 'STRIKE_LAUNCH',
+            name: registeredName,
+            target: selectedTarget
+        });
+
+        setIntermissionState("Strike Transmitted 💥", `You launched an attack targeting ${selectedTarget}!`);
     }
 
     function revealInputGridAnswer(correctString) {
         interactionAllowed = false;
         let items = document.querySelectorAll("#interactive-options-box .option-item");
-        
         items.forEach(item => {
             let itemText = item.querySelector(".lbl-txt").innerText;
             item.classList.remove("selected");
@@ -219,7 +249,7 @@
 
         setTimeout(() => {
             if(document.getElementById("panel-quiz").classList.contains("hidden")) return;
-            setIntermissionState("Round Finished", "Look up! The host will proceed with the match shortly.");
+            setIntermissionState("Round Finished", "Gathering scores... Watch the presentation screen.");
         }, 3000);
     }
 
@@ -227,7 +257,6 @@
         document.getElementById("panel-join").classList.add("hidden");
         document.getElementById("panel-wait").classList.add("hidden");
         document.getElementById("panel-quiz").classList.add("hidden");
-        
         document.getElementById("disconn-title").innerText = title;
         document.getElementById("disconn-desc").innerText = msg;
         document.getElementById("panel-disconn").classList.remove("hidden");
