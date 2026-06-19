@@ -3,359 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Presentation Core</title>
+    <title>French Quiz - Game Panel</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --glass-panel: rgba(15, 23, 42, 0.55);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --accent-green: #10b981;
-            --accent-blue: #3b82f6;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-main: #1e293b;
+            --accent: #4f46e5;
         }
+
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 40px 20px;
-            min-height: 100vh;
-            color: #f8fafc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #2e1065, #0f172a);
-            background-size: 400% 400%;
-            animation: hostBackground 16s ease infinite;
+            margin: 0; padding: 16px; min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(-45deg, #ff7b90, #ffae77, #7bc8ff, #9873ff); background-size: 400% 400%;
+            animation: fluidGradient 12s ease infinite;
         }
 
-        @keyframes hostBackground {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        @keyframes fluidGradient { 0% { background-position:0% 50%; } 50% { background-position:100% 50%; } 100% { background-position:0% 50%; } }
+
+        .app-window {
+            width: 100%; max-width: 420px; background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); overflow: hidden; display: flex; flex-direction: column;
         }
 
-        .main-stage {
-            width: 100%;
-            max-width: 1000px;
-            background: var(--glass-panel);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 32px;
-            padding: 45px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
-            text-align: center;
-        }
+        .top-navbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: rgba(255, 255, 255, 0.4); border-bottom: 1px solid var(--glass-border); }
+        .nav-pill { background: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; color: #475569; }
+        
+        .content-body { padding: 24px; text-align: center; }
+        h2 { color: var(--text-main); margin-top: 0; font-size: 1.6rem; font-weight: 800; }
+        p { color: #64748b; font-size: 1rem; line-height: 1.5; }
 
-        h1 {
-            font-size: 2.8rem;
-            font-weight: 900;
-            margin-top: 0;
-            margin-bottom: 10px;
-            letter-spacing: -0.02em;
-            background: linear-gradient(to right, #38bdf8, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        input[type="text"] { width: 100%; padding: 16px; font-size: 1.1rem; border: 2px solid #e2e8f0; border-radius: 14px; margin: 16px 0; outline: none; text-align: center; font-weight: 600; }
+        
+        .action-button { width: 100%; background: var(--accent); color: white; border: none; padding: 16px; font-size: 1.1rem; font-weight: 700; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
 
-        p.subtitle {
-            font-size: 1.3rem;
-            color: #94a3b8;
-            margin-bottom: 40px;
-        }
+        .quiz-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .option-item { background: white; border: 2px solid #e2e8f0; padding: 20px; font-size: 1.2rem; border-radius: 14px; cursor: pointer; color: var(--text-main); font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .option-item:active { transform: scale(0.97); }
+        
+        .shape { width: 16px; height: 16px; border-radius: 4px; }
+        .shape-0 { background: #ef4444; } .shape-1 { background: #3b82f6; } .shape-2 { background: #eab308; } .shape-3 { background: #10b981; }
 
-        .split-lobby {
-            display: flex;
-            gap: 40px;
-            justify-content: center;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        /* QR Dynamic Module Frame */
-        .qr-node {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--glass-border);
-            padding: 24px;
-            border-radius: 24px;
-            display: inline-block;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-
-        #qrcode {
-            background: white;
-            padding: 16px;
-            border-radius: 16px;
-            display: inline-block;
-            transition: transform 0.3s ease;
-        }
-        #qrcode:hover {
-            transform: scale(1.03);
-        }
-
-        .room-tag {
-            font-family: monospace;
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #38bdf8;
-            margin-top: 14px;
-            background: rgba(56, 189, 248, 0.1);
-            padding: 6px 14px;
-            border-radius: 10px;
-            display: inline-block;
-        }
-
-        /* Connected User Listing Group */
-        .roster-card {
-            width: 440px;
-            background: rgba(0, 0, 0, 0.25);
-            border-radius: 24px;
-            padding: 24px;
-            border: 1px solid rgba(255,255,255,0.04);
-            min-height: 290px;
-            text-align: left;
-        }
-
-        .roster-card h3 {
-            margin-top: 0;
-            font-size: 1.3rem;
-            color: #cbd5e1;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .badge-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            max-height: 220px;
-            overflow-y: auto;
-            margin-top: 15px;
-        }
-
-        .player-chip {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.05rem;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0.7); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Premium Dashboard Table controls */
-        .launch-btn {
-            background: var(--accent-green);
-            color: white;
-            border: none;
-            padding: 18px 50px;
-            font-size: 1.6rem;
-            border-radius: 16px;
-            cursor: pointer;
-            font-weight: 800;
-            margin-top: 40px;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-            transition: all 0.2s ease;
-            display: none;
-        }
-
-        .launch-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 14px 30px rgba(16, 185, 129, 0.5);
-        }
+        .option-item.selected { background: #1e293b !important; color: white !important; border-color: #1e293b !important; }
+        .option-item.correct { background: #10b981 !important; border-color: #10b981 !important; color: white !important; }
+        .option-item.wrong { background: #ef4444 !important; border-color: #ef4444 !important; color: white !important; }
 
         .hidden { display: none !important; }
-
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 10px;
-            margin-top: 30px;
-        }
-
-        th {
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
-            padding: 12px 20px;
-            text-align: left;
-        }
-
-        td {
-            padding: 18px 20px;
-            background: rgba(255, 255, 255, 0.04);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 1.3rem;
-            font-weight: 600;
-        }
-
-        td:first-child {
-            border-left: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 14px 0 0 14px;
-            font-weight: 800;
-            color: #38bdf8;
-        }
-
-        td:last-child {
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 0 14px 14px 0;
-            text-align: right;
-            color: #f43f5e;
-        }
+        .pulse-loader { width: 60px; height: 60px; background: var(--accent); border-radius: 50%; margin: 30px auto; animation: pulse 1.8s infinite ease-in-out; }
+        @keyframes pulse { 0%, 100% { transform: scale(0.6); opacity: 0.4; } 50% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
 
-<div class="main-stage">
-    <!-- VIEW ZONE 1: ENTRY ROOM LOBBY -->
-    <div id="stage-lobby">
-        <h1>Jeu de Vocabulaire Français</h1>
-        <p class="subtitle">Scan the QR code to join.</p>
-        
-        <div class="split-lobby">
-            <div class="qr-node">
-                <div id="qrcode"></div>
-                <div><span class="room-tag" id="room-code-badge">Creating Network...</span></div>
-            </div>
-            
-            <div class="roster-card">
-                <h3>Active PLayers <span id="lobby-count" style="color:var(--accent-blue)">0</span></h3>
-                <div class="badge-grid" id="lobby-grid-target"></div>
-            </div>
-        </div>
-        
-        <button id="action-launch-trigger" class="launch-btn" onclick="broadcastStartSignal()">START MATCH</button>
+<div class="app-window">
+    <div class="top-navbar">
+        <div class="nav-pill" id="hud-name">🇫🇷 Join</div>
+        <div class="nav-pill" style="background:#fef3c7; color:#b45309;" id="hud-status-pill">Lobby</div>
     </div>
 
-    <!-- VIEW ZONE 2: RUNTIME LEADERBOARD -->
-    <div id="stage-scoreboard" class="hidden">
-        <h1 style="background: linear-gradient(to right, #f43f5e, #fb7185); -webkit-background-clip: text;">Standings</h1>
-        <p class="subtitle" style="margin-bottom: 20px;">Answering live on screens</p>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 15%">Rank</th>
-                    <th style="width: 60%">Name</th>
-                    <th style="width: 25%; text-align: right;">Total Points</th>
-                </tr>
-            </thead>
-            <tbody id="scoreboard-table-body"></tbody>
-        </table>
+    <div class="content-body">
+        <div id="panel-join">
+            <h2>Rejoindre</h2>
+            <p>Type your name to step into the shared presentation room.</p>
+            <input type="text" id="username" placeholder="Your Name" maxlength="14" autocomplete="off">
+            <button class="action-button" onclick="connectToHost()">Enter Game</button>
+            <p id="network-status" style="margin-top: 15px; font-size: 0.85rem; font-weight: 600; color:#ef4444;"></p>
+        </div>
+
+        <div id="panel-wait" class="hidden">
+            <h2 id="wait-title">Prêt !</h2>
+            <p id="wait-desc">Look up at the main projection screen. The next question will appear there!</p>
+            <div class="pulse-loader"></div>
+        </div>
+
+        <div id="panel-quiz" class="hidden">
+            <h2 style="margin-bottom:5px;">Select Your Answer</h2>
+            <p style="margin-top:0; color:#64748b;">Look at the main stage options to choose</p>
+            <div class="quiz-grid" id="interactive-options-box">
+                <div class="option-item" onclick="handleSubmission(this, 0)"><span class="shape shape-0"></span> <span class="lbl-txt"></span></div>
+                <div class="option-item" onclick="handleSubmission(this, 1)"><span class="shape shape-1"></span> <span class="lbl-txt"></span></div>
+                <div class="option-item" onclick="handleSubmission(this, 2)"><span class="shape shape-2"></span> <span class="lbl-txt"></span></div>
+                <div class="option-item" onclick="handleSubmission(this, 3)"><span class="shape shape-3"></span> <span class="lbl-txt"></span></div>
+            </div>
+        </div>
+
+        <div id="panel-disconn" class="hidden">
+            <h2 id="disconn-title">Disconnected</h2>
+            <p id="disconn-desc">You are no longer connected to this room session.</p>
+        </div>
     </div>
 </div>
 
 <script>
-    // Link synchronization endpoint target
-    const DEPLOYED_PLAYER_URL = "https://charcoal-hash.github.io/trumanator.github.io/player.html";
-
-    // Expanded Presentation Question Database Group
-    const vocabPool = [
-        { french: "Bonjour", english: "Hello", wrongs: ["Goodbye", "Thank you", "Please"] },
-        { french: "Chat", english: "Cat", wrongs: ["Dog", "Bird", "Mouse"] },
-        { french: "Pomme", english: "Apple", wrongs: ["Banana", "Orange", "Grape"] },
-        { french: "Livre", english: "Book", wrongs: ["Pen", "Chair", "Table"] },
-        { french: "Voiture", english: "Car", wrongs: ["Bicycle", "Train", "Plane"] }
-    ];
-
-    function generateSecureId() {
-        const structuralAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        let builtToken = "";
-        for (let idx = 0; idx < 4; idx++) {
-            builtToken += structuralAlphabet.charAt(Math.floor(Math.random() * structuralAlphabet.length));
-        }
-        return builtToken;
-    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetRoomId = urlParams.get('room');
     
-    const calculatedRoomToken = generateSecureId();
-    let trackingScoreboardMap = {}; 
-    let activeClientConnections = [];
+    let peer, connection;
+    let registeredName = "";
+    let interactionAllowed = false;
+    let currentlySelectedBtn = null;
 
-    // Instantiate Node Linkages
-    const peerInstance = new Peer(calculatedRoomToken);
+    if (!targetRoomId) {
+        document.getElementById("network-status").innerText = "⚠️ Missing Room Parameter inside Link.";
+    }
 
-    peerInstance.on('open', (validatedId) => {
-        document.getElementById("room-code-badge").innerText = "ROOM: " + validatedId;
-        const compiledTargetUrl = `${DEPLOYED_PLAYER_URL}?room=${validatedId}`;
+    function connectToHost() {
+        registeredName = document.getElementById("username").value.trim();
+        if(!registeredName) return alert("Please specify a player nickname.");
         
-        new QRCode(document.getElementById("qrcode"), {
-            text: compiledTargetUrl,
-            width: 210,
-            height: 210,
-            colorDark : "#0f172a",
-            colorLight : "#ffffff"
-        });
-    });
-
-    peerInstance.on('connection', (incomingClientChannel) => {
-        activeClientConnections.push(incomingClientChannel);
+        document.getElementById("network-status").innerText = "Connecting...";
+        peer = new Peer();
         
-        incomingClientChannel.on('data', (incomingPackage) => {
-            if (incomingPackage.type === 'JOIN') {
-                trackingScoreboardMap[incomingPackage.name] = 0; 
-                refreshLobbyRosterView();
-                document.getElementById("action-launch-trigger").style.display = "inline-block";
-            }
-            if (incomingPackage.type === 'SCORE_UPDATE') {
-                trackingScoreboardMap[incomingPackage.name] = incomingPackage.score;
-                refreshLiveScoreboardView();
-            }
-        });
-    });
+        peer.on('open', () => {
+            connection = peer.connect(targetRoomId);
+            
+            connection.on('open', () => {
+                connection.send({ type: 'JOIN', name: registeredName });
+            });
 
-    function refreshLobbyRosterView() {
-        const gridBox = document.getElementById("lobby-grid-target");
-        gridBox.innerHTML = "";
-        const identityKeys = Object.keys(trackingScoreboardMap);
-        document.getElementById("lobby-count").innerText = identityKeys.length;
-        
-        identityKeys.forEach(pName => {
-            gridBox.innerHTML += `<div class="player-chip">⚡ ${pName}</div>`;
+            connection.on('data', (payload) => {
+                if(payload.type === 'JOIN_CONFIRM') {
+                    registeredName = payload.assignedName;
+                    document.getElementById("hud-name").innerText = "👤 " + registeredName;
+                    document.getElementById("panel-join").classList.add("hidden");
+                    setIntermissionState("Connected!", "The game loop is controlled by the host. Sit tight!");
+                }
+                
+                if(payload.type === 'FORCE_RENAME') {
+                    registeredName = payload.newName;
+                    document.getElementById("hud-name").innerText = "👤 " + registeredName;
+                }
+
+                if(payload.type === 'KICKED') {
+                    showDisconnectUI("Kicked", "You were removed from this session by the presentation host.");
+                }
+
+                if(payload.type === 'BANNED') {
+                    showDisconnectUI("Banned", "Your network identification is banned from accessing this room.");
+                }
+
+                if (payload.type === 'SHOW_QUESTION') {
+                    displayInputGrid(payload.options);
+                }
+
+                if (payload.type === 'ROUND_ENDED') {
+                    revealInputGridAnswer(payload.correct);
+                }
+            });
+
+            connection.on('close', () => {
+                showDisconnectUI("Disconnected", "The connection to the classroom server has timed out or closed.");
+            });
         });
     }
 
-    function broadcastStartSignal() {
-        activeClientConnections.forEach(clientChannel => {
-            clientChannel.send({ type: 'START_GAME', words: vocabPool });
-        });
+    function setIntermissionState(title, message) {
+        document.getElementById("hud-status-pill").innerText = "Waiting";
+        document.getElementById("hud-status-pill").style.background = "#fef3c7";
+        document.getElementById("hud-status-pill").style.color = "#b45309";
         
-        document.getElementById("stage-lobby").classList.add("hidden");
-        document.getElementById("stage-scoreboard").classList.remove("hidden");
-        refreshLiveScoreboardView();
+        document.getElementById("panel-quiz").classList.add("hidden");
+        document.getElementById("wait-title").innerText = title;
+        document.getElementById("wait-desc").innerText = message;
+        document.getElementById("panel-wait").classList.remove("hidden");
     }
 
-    function refreshLiveScoreboardView() {
-        const targetedTableBody = document.getElementById("scoreboard-table-body");
-        targetedTableBody.innerHTML = "";
+    function displayInputGrid(choices) {
+        interactionAllowed = true;
+        currentlySelectedBtn = null;
         
-        let structuredRankingsArray = Object.entries(trackingScoreboardMap).sort((alpha, beta) => beta[1] - alpha[1]);
-        
-        structuredRankingsArray.forEach(([competitorName, pointsValue], positionIndex) => {
-            let rankLabel = `#${positionIndex + 1}`;
-            if(positionIndex === 0) rankLabel = "🥇 1st";
-            if(positionIndex === 1) rankLabel = "🥈 2nd";
-            if(positionIndex === 2) rankLabel = "🥉 3rd";
+        document.getElementById("hud-status-pill").innerText = "ACTIVE";
+        document.getElementById("hud-status-pill").style.background = "#d1fae5";
+        document.getElementById("hud-status-pill").style.color = "#065f46";
 
-            targetedTableBody.innerHTML += `
-                <tr>
-                    <td>${rankLabel}</td>
-                    <td>${competitorName}</td>
-                    <td>${pointsValue} pts</td>
-                </tr>
-            `;
+        document.getElementById("panel-wait").classList.add("hidden");
+        document.getElementById("panel-quiz").classList.remove("hidden");
+        
+        let items = document.querySelectorAll("#interactive-options-box .option-item");
+        items.forEach((item, index) => {
+            item.className = "option-item";
+            item.querySelector(".lbl-txt").innerText = choices[index];
         });
+    }
+
+    function handleSubmission(btn, index) {
+        if(!interactionAllowed) return;
+        interactionAllowed = false;
+        
+        currentlySelectedBtn = btn;
+        btn.classList.add("selected");
+        
+        let choiceText = btn.querySelector(".lbl-txt").innerText;
+        connection.send({
+            type: 'ANSWER_SUBMIT',
+            name: registeredName,
+            choice: choiceText
+        });
+    }
+
+    function revealInputGridAnswer(correctString) {
+        interactionAllowed = false;
+        let items = document.querySelectorAll("#interactive-options-box .option-item");
+        
+        items.forEach(item => {
+            let itemText = item.querySelector(".lbl-txt").innerText;
+            item.classList.remove("selected");
+            if(itemText === correctString) {
+                item.classList.add("correct");
+            } else if(item === currentlySelectedBtn) {
+                item.classList.add("wrong");
+            }
+        });
+
+        setTimeout(() => {
+            if(document.getElementById("panel-quiz").classList.contains("hidden")) return;
+            setIntermissionState("Round Finished", "Look up! The host will proceed with the match shortly.");
+        }, 3000);
+    }
+
+    function showDisconnectUI(title, msg) {
+        document.getElementById("panel-join").classList.add("hidden");
+        document.getElementById("panel-wait").classList.add("hidden");
+        document.getElementById("panel-quiz").classList.add("hidden");
+        
+        document.getElementById("disconn-title").innerText = title;
+        document.getElementById("disconn-desc").innerText = msg;
+        document.getElementById("panel-disconn").classList.remove("hidden");
+        if(connection) connection.close();
     }
 </script>
 </body>
