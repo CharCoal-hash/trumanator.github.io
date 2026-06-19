@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Host</title>
+    <title>Projet de Vocab - Host</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -37,11 +37,12 @@
         .hidden { display: none !important; }
 
         .hud { display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; font-size: 1.1rem; font-weight: bold; }
-        .question { background: white; color: var(--bg-dark); padding: 30px; border-radius: 16px; font-size: 2.5rem; font-weight: 900; margin-bottom: 20px; }
+        .question { background: white; color: var(--bg-dark); padding: 30px; border-radius: 16px; font-size: 2.3rem; font-weight: 900; margin-bottom: 10px; }
+        .context-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid var(--border); font-style: italic; margin-bottom: 20px; text-align: left; line-height: 1.4; color: #cbd5e1; }
         .feed { min-height: 40px; color: #fbbf24; font-weight: bold; margin-bottom: 20px; padding: 10px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-        .option { background: rgba(255,255,255,0.05); border: 2px solid var(--border); padding: 20px; font-size: 1.3rem; font-weight: bold; border-radius: 12px; text-align: left; position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; }
+        .option { background: rgba(255,255,255,0.05); border: 2px solid var(--border); padding: 20px; font-size: 1.2rem; font-weight: bold; border-radius: 12px; text-align: left; position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; }
         .opt-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(255,255,255,0.05); transition: width 0.5s; z-index: 1; }
         .opt-text { z-index: 2; }
         .opt-pct { z-index: 2; display: none; }
@@ -63,9 +64,8 @@
 <body>
 
 <div class="container">
-    <!-- VIEW 1: LOBBY -->
     <div id="view-lobby">
-        <h1>French Vocabulary Quiz</h1>
+        <h1>Projet de Vocabulaire</h1>
         <p class="subtitle">Scan to join the room</p>
         
         <div class="lobby-view">
@@ -83,15 +83,20 @@
         <button id="start-btn" class="btn" style="display:none;" onclick="startGame()">Start Game</button>
     </div>
 
-    <!-- VIEW 2: GAMEPLAY -->
     <div id="view-game" class="hidden">
         <div class="hud">
-            <div>Question <span id="hud-index">1</span>/5</div>
+            <div>Question <span id="hud-index">1</span>/6</div>
             <div style="color:#fbbf24;" id="hud-timer">--</div>
             <div id="hud-done">Done: 0/0</div>
         </div>
 
         <div class="question" id="q-text">...</div>
+        
+        <div class="context-box" id="q-context">
+            <strong>Définition:</strong> <span id="hint-def">...</span><br><br>
+            <strong>Exemple:</strong> <span id="hint-phrase">...</span>
+        </div>
+
         <div class="feed" id="game-feed">Waiting for answers...</div>
 
         <div class="options-grid" id="options-grid">
@@ -104,7 +109,6 @@
         <button class="btn" id="next-btn" onclick="nextStep()">Reveal Answer</button>
     </div>
 
-    <!-- VIEW 3: SCOREBOARD -->
     <div id="view-scores" class="hidden">
         <h1>Leaderboard</h1>
         <p class="subtitle">Final Standings</p>
@@ -118,7 +122,6 @@
     </div>
 </div>
 
-<!-- MODAL FOR MODERATION -->
 <div class="modal hidden" id="mod-modal">
     <div class="modal-inner">
         <h3 id="mod-title" style="margin-top:0;">Manage Player</h3>
@@ -135,18 +138,56 @@
 <script>
     const PLAYER_PAGE_URL = "player.html";
 
+    // Replaced entirely with your project script vocabulary profile details
     const questions = [
-        { f: "Bonjour", e: "Hello", w: ["Goodbye", "Thank you", "Please"] },
-        { f: "Chat", e: "Cat", w: ["Dog", "Bird", "Mouse"] },
-        { f: "Pomme", e: "Apple", w: ["Banana", "Orange", "Grape"] },
-        { f: "Livre", e: "Book", w: ["Pen", "Chair", "Table"] },
-        { f: "Voiture", e: "Car", w: ["Bicycle", "Train", "Plane"] }
+        { 
+            f: "Une presse papier", 
+            e: "A clipboard", 
+            d: "Un mince tableau portable avec un ressort pour serrer ou tenir un papier au tableau.",
+            p: "Mr Jubinville utilise une presse papier pour serrer son papier de joueurs de la Ultimate.",
+            w: ["A thumbtack", "Chess", "A pencil sharpener"] 
+        },
+        { 
+            f: "Une punaise", 
+            e: "A thumbtack", 
+            d: "Une punaise est une petite épingle pointeur doiter d’une tête plate qui sert à fixer des papiers au mur.",
+            p: "Je place une punaise sur le mur pour mon dessin magique reste sur le mur.",
+            w: ["A clipboard", "A binder", "A binder clip"] 
+        },
+        { 
+            f: "Le jeu d’échecs", 
+            e: "Chess", 
+            d: "Les échecs sont un jeu de société classique de stratégie pour 2 joueurs qui se joue sur un un échiquier de 64 cases.",
+            p: "J’ai joué Sawyer dans un jeu d’échecs est je cuisine lui.",
+            w: ["A pencil sharpener", "A clipboard", "A binder"] 
+        },
+        { 
+            f: "Une taille crayon", 
+            e: "A pencil sharpener", 
+            d: "Un taille crayon est un outil qui sert à affûter la pointe d’un crayon.",
+            p: "J'utilise ma taille crayon pour aiguiser mon crayon.",
+            w: ["A binder clip", "A thumbtack", "Chess"] 
+        },
+        { 
+            f: "Une classeur", 
+            e: "A binder", 
+            d: "Un classeur a couverture vigide minui de pinces servent à maintenir des feuilles de papier ensemble.",
+            p: "Sawyer toujours prendre leur classeur à leur maison chaque jour pour faire leur travail.",
+            w: ["A clipboard", "A pencil sharpener", "A binder clip"] 
+        },
+        { 
+            f: "Une pince a trombone", 
+            e: "A binder clip", 
+            d: "Une pince à papier est un outil simple à ressort qui sert à maintenir ensemble plusieurs feuilles de papier.",
+            p: "Je place une pince a trombone sur le nez de Sawyer.",
+            w: ["A thumbtack", "Chess", "A binder"] 
+        }
     ];
 
     const roomCode = Math.random().toString(36).substring(2,6).toUpperCase();
     let scores = {}, peerIds = {}, connections = {}, banned = new Set();
     
-    let qIdx = 0, timeLeft = 20, timerInterval = null, answersCount = 0, state = "LOBBY", order = [];
+    let qIdx = 0, timeLeft = 25, timerInterval = null, answersCount = 0, state = "LOBBY", order = [];
     let votes = {}, protectedPlayers = new Set(), answeredPlayers = new Set(), selectedModUser = "";
 
     const peer = new Peer(roomCode);
@@ -270,7 +311,7 @@
     function loadQuestion() {
         state = "QUESTION";
         answersCount = 0;
-        timeLeft = 20;
+        timeLeft = 25;
         votes = {};
         protectedPlayers.clear();
         answeredPlayers.clear();
@@ -278,7 +319,11 @@
         
         let curr = questions[qIdx];
         document.getElementById("hud-index").innerText = qIdx + 1;
-        document.getElementById("q-text").innerText = `"${curr.f}" means...`;
+        document.getElementById("q-text").innerText = `"${curr.f}"`;
+        
+        // Add hints to screen
+        document.getElementById("hint-def").innerText = curr.d;
+        document.getElementById("hint-phrase").innerText = curr.p;
         
         order = [curr.e, ...curr.w].sort(() => 0.5 - Math.random());
         
