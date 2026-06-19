@@ -43,7 +43,6 @@
         <div id="hud-status" style="color:#fbbf24;">Lobby</div>
     </div>
 
-    <!-- REGISTER VIEW -->
     <div id="view-join">
         <h2>Join Game</h2>
         <input type="text" id="name-input" placeholder="Enter Nickname" maxlength="12">
@@ -51,13 +50,11 @@
         <p id="error-msg" style="color:#ef4444; margin-top:10px; font-size:0.9rem;"></p>
     </div>
 
-    <!-- INTERMISSION LOADING BANNER -->
     <div id="view-wait" class="hidden">
         <h3 id="wait-msg">Connected</h3>
         <div class="loader"></div>
     </div>
 
-    <!-- QUIZ SYSTEM ENGINE CONTAINER -->
     <div id="view-quiz" class="hidden">
         <h3 style="margin: 0 0 5px 0;">Select Answer</h3>
         <div class="choices" id="choices-box">
@@ -76,14 +73,12 @@
             <button class="btn" style="padding:8px; font-size:0.9rem; margin-top:8px; background:#ef4444;" onclick="fireStrike()">Confirm Strike</button>
         </div>
         
-        <!-- WAITING FOR HOST REVEAL INDICATOR (Prevents instant "Round Finished" crash) -->
         <div id="quiz-waiting" class="hidden" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
             <div class="loader" style="width:24px; height:24px; margin:5px auto;"></div>
             <span style="font-size:0.85rem; color:#94a3b8;">Answer locked. Waiting for host...</span>
         </div>
     </div>
 
-    <!-- GENERIC DISCONNECT DISPLAY -->
     <div id="view-alert" class="hidden">
         <h2 id="alert-title">Disconnected</h2>
         <p id="alert-desc">Lost connection to server.</p>
@@ -222,10 +217,7 @@
         activeChoiceBtn = btn;
         btn.classList.add("picked");
         
-        // Lock all answer option buttons visually
         document.querySelectorAll("#choices-box .opt-btn").forEach(b => b.disabled = true);
-        
-        // Show the localized sub-loader instead of kicking to a generic finish screen
         document.getElementById("quiz-waiting").classList.remove("hidden");
 
         conn.send({
@@ -245,13 +237,8 @@
             if(b.innerText === correct) b.classList.add("good");
             else if(b === activeChoiceBtn) b.classList.add("bad");
         });
-
-        // Hold view on the device screen for 3 seconds before transitioning to intermission
-        setTimeout(() => {
-            if(!document.getElementById("view-quiz").classList.contains("hidden")) {
-                showWait("Round Finished", "Check host screen for stats updates.");
-            }
-        }, 3000);
+        // Automated timeout completely removed here. 
+        // It will sit on this screen showing the correct answers until the host changes rounds.
     }
 
     function showAlert(title, msg) {
