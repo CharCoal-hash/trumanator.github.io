@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Quiz - Player</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { --primary: #0055A5; --red: #EF4135; --dark: #2c3e50; }
+        body { font-family: sans-serif; background: #f0f3f5; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin:0;}
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; border-top: 8px solid var(--primary); }
+        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; font-size: 1.1rem; box-sizing: border-box;}
+        input { border: 2px solid #ddd; text-align: center; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-opt { background: white; color: var(--dark); border: 2px solid #e2e8f0; }
+        .btn-opt.correct { background: #2ecc71; color: white; border-color: #2ecc71; }
+        .btn-opt.wrong { background: #e74c3c; color: white; border-color: #e74c3c; }
+        .hidden { display: none; }
+        .word-box { background: #f8f9fa; padding: 25px; font-size: 2rem; font-weight: bold; color: var(--primary); margin-bottom: 15px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="join-screen">
+        <h2>Rejoindre le Jeu</h2>
+        <input type="text" id="username" placeholder="Enter Your Name">
+        <button onclick="connectToHost()">Join Lobby</button>
+        <p id="status" style="color: #666; font-size: 0.9rem;"></p>
+    </div>
+
+    <div id="wait-screen" class="hidden">
+        <h2>Bienvenue, <span id="display-name"></span>!</h2>
+        <p>Look at the main screen. The game will start shortly...</p>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <div style="font-weight: bold; margin-bottom: 10px;">Question <span id="q-num">1</span>/5</div>
+        <div class="word-box" id="french-word">...</div>
+        <div id="options-grid">
+            <button class="btn-opt" onclick="submitAnswer(this)"></button>
+            <button class="btn-opt" onclick="submitAnswer(this)"></button>
+            <button class="btn-opt" onclick="submitAnswer(this)"></button>
+            <button class="btn-opt" onclick="submitAnswer(this)"></button>
+        </div>
+    </div>
+
+    <div id="end-screen" class="hidden">
+        <h2>Fin du jeu !</h2>
+        <p>Check the main projector for the final leaderboard rankings!</p>
+    </div>
+</div>
+
+<script>
+    // Extract Host ID from URL parameters (?room=XXXX)
+    const urlParams = new URLSearchParams(window.location.search);
+    const hostId = urlParams.get('room');
+    
+    let peer, conn;
+    let myName = "";
+    let gameWords = [];
+    let currentIndex = 0;
+    let score = 0;
+    let canAnswer = true;
+
+    if (!hostId) {
+        document.getElementById("status").innerText = "Error: Invalid QR Code Link (Missing Room ID).";
+    }
+
+    function connectToHost() {
+        myName = document.getElementById("username").value.trim();
+        if(!myName) return alert("Please enter a name!");
+        
+        document.getElementById("status").innerText = "Connecting...";
+        
+        peer = new Peer();
+        
+        peer.on('open', () => {
+            conn = peer.connect(hostId);
+            
+            conn.on('open', () => {
+                conn.send({ type: 'JOIN', name: myName });
+                document.getElementById("join-screen").classList.add("hidden");
+                document.getElementById("display-name").innerText = myName;
+                document.getElementById("wait-screen").classList.remove("hidden");
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'START_GAME') {
+                    gameWords = data.words;
+                    startQuiz();
+                }
+            });
+        });
+    }
+
+    function startQuiz() {
+        document.getElementById("wait-screen").classList.add("hidden");
+        document.getElementById("game-screen").classList.remove("hidden");
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        canAnswer = true;
+        let current = gameWords[currentIndex];
+        document.getElementById("q-num").innerText = currentIndex + 1;
+        document.getElementById("french-word").innerText = current.french;
+        
+        let options = [current.english, ...current.wrongs].sort(() => 0.5 - Math.random());
+        let buttons = document.querySelectorAll("#options-grid .btn-opt");
+        buttons.forEach((btn, idx) => {
+            btn.innerText = options[idx];
+            btn.className = "btn-opt";
+        });
+    }
+
+    function submitAnswer(btn) {
+        if (!canAnswer) return;
+        canAnswer = false;
+        
+        let current = gameWords[currentIndex];
+        if (btn.innerText === current.english) {
+            btn.classList.add("correct");
+            score++;
+            conn.send({ type: 'SCORE_UPDATE', name: myName, score: score });
+        } else {
+            btn.classList.add("wrong");
+            document.querySelectorAll("#options-grid .btn-opt").forEach(b => {
+                if(b.innerText === current.english) b.classList.add("correct");
+            });
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < gameWords.length) {
+                loadQuestion();
+            } else {
+                document.getElementById("game-screen").classList.add("hidden");
+                document.getElementById("end-screen").classList.remove("hidden");
+            }
+        }, 1500);
+    }
+</script>
+</body>
+</html>
