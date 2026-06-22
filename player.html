@@ -93,7 +93,6 @@
         <p id="alert-desc">Lost connection to server.</p>
     </div>
 </div>
-
 <script>
     const params = new URLSearchParams(window.location.search);
     const hostRoomId = params.get('room');
@@ -164,6 +163,7 @@
             document.getElementById("quiz-title").innerText = "Type the Translation";
             document.getElementById("choices-box").classList.add("hidden");
             document.getElementById("text-box-container").classList.remove("hidden");
+            
             let inputField = document.getElementById("text-answer-input");
             inputField.value = "";
             inputField.disabled = false;
@@ -176,14 +176,14 @@
             let btns = document.querySelectorAll("#choices-box .opt-btn");
             btns.forEach((b, i) => {
                 b.className = "opt-btn";
-                b.innerText = options[i];
+                b.innerText = options[i] || "";
                 b.disabled = false;
             });
         }
 
         let dropdown = document.getElementById("target-select");
         dropdown.innerHTML = "";
-        if(targets.length === 0) {
+        if(!targets || targets.length === 0) {
             dropdown.innerHTML = "<option value=''>No targets available</option>";
         } else {
             targets.forEach(t => dropdown.innerHTML += `<option value="${t}">${t}</option>`);
@@ -192,6 +192,7 @@
         renderItems();
     }
 
+    // FIX 1: Cleaned up UI building loop to prevent index matching bugs
     function renderItems() {
         let box = document.getElementById("inventory-box");
         box.innerHTML = "";
@@ -200,11 +201,11 @@
             return;
         }
         inventory.forEach((item, idx) => {
-            if (item === "STRIKE") {
-                box.innerHTML += `<button class="i-btn i-strike" onclick="useItem('STRIKE', ${idx})">💥 Strike</button>`;
-            } else if (item === "BLOCK") {
-                box.innerHTML += `<button class="i-btn i-block" onclick="useItem('BLOCK', ${idx})">🛡️ Block</button>`;
-            }
+            let btn = document.createElement("button");
+            btn.className = item === "STRIKE" ? "i-btn i-strike" : "i-btn i-block";
+            btn.innerText = item === "STRIKE" ? "💥 Strike" : "🛡️ Block";
+            btn.onclick = () => useItem(item, idx);
+            box.appendChild(btn);
         });
     }
 
@@ -216,19 +217,22 @@
             alert("🛡️ Block active! Attacks on you this round will backfire.");
         } else if (type === "STRIKE") {
             let val = document.getElementById("target-select").value;
-            if(!val) return alert("No valid target available!");
-            document.getElementById("strike-panel").classList.remove("hidden");
-            document.getElementById("strike-panel").dataset.idx = idx;
+            if(!val || val === "") return alert("No valid target available!");
+            
+            let panel = document.getElementById("strike-panel");
+            panel.classList.remove("hidden");
+            panel.setAttribute("data-idx", idx); // set directly as element attribute safely
         }
     }
 
     function fireStrike() {
-        let idx = parseInt(document.getElementById("strike-panel").dataset.idx);
+        let panel = document.getElementById("strike-panel");
+        let idx = parseInt(panel.getAttribute("data-idx"));
         let target = document.getElementById("target-select").value;
-        if (!target) return;
+        if (!target || target === "") return;
         
         inventory.splice(idx, 1);
-        document.getElementById("strike-panel").classList.add("hidden");
+        panel.classList.add("hidden");
         renderItems();
 
         conn.send({ type: 'USE_STRIKE', name: myName, target: target });
