@@ -142,12 +142,11 @@
 <script>
     const PLAYER_PAGE_URL = "player.html";
 
-    // Reordered your list: Pencil Sharpener is now type: "text"
     const questions = [
         { f: "Une presse papier", e: "A clipboard", w: ["A thumbtack", "Chess", "A pencil sharpener"], type: "choice" },
         { f: "Une punaise", e: "A thumbtack", w: ["A clipboard", "A binder", "A binder clip"], type: "choice" },
         { f: "Le jeu d’échecs", e: "Chess", w: ["A pencil sharpener", "A clipboard", "A binder"], type: "choice" },
-        { f: "Une taille crayon", e: "A pencil sharpener", type: "text" }, // Mandatory user typed response
+        { f: "Une taille crayon", e: "A pencil sharpener", type: "text" }, 
         { f: "Une classeur", e: "A binder", w: ["A clipboard", "A pencil sharpener", "A binder clip"], type: "choice" },
         { f: "Une pince a trombone", e: "A binder clip", w: ["A thumbtack", "Chess", "A binder"], type: "choice" }
     ];
@@ -157,14 +156,32 @@
     
     let qIdx = 0, timeLeft = 25, timerInterval = null, answersCount = 0, state = "LOBBY", order = [];
     let votes = {}, protectedPlayers = new Set(), answeredPlayers = new Set(), selectedModUser = "";
-    let typedAnswers = []; // Holds player strings for the free response mode
+    let typedAnswers = []; 
 
     const peer = new Peer(roomCode);
 
     peer.on('open', (id) => {
         document.getElementById("room-code").innerText = "ROOM CODE: " + id;
-        new QRCode(document.getElementById("qrcode"), { text: window.location.href.replace("host.html", PLAYER_PAGE_URL) + "?room=" + id, width: 180, height: 180 });
+        
+        // FIX 1: Ensure the DOM is fully interactive before initializing QRCode
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+            generateHostQRCode(id);
+        } else {
+            window.addEventListener('DOMContentLoaded', () => generateHostQRCode(id));
+        }
     });
+
+    function generateHostQRCode(id) {
+        const qrEl = document.getElementById("qrcode");
+        if (qrEl) {
+            qrEl.innerHTML = ""; // Clear loader text if any
+            new QRCode(qrEl, { 
+                text: window.location.href.replace("host.html", PLAYER_PAGE_URL) + "?room=" + id, 
+                width: 180, 
+                height: 180 
+            });
+        }
+    }
 
     peer.on('connection', (conn) => {
         conn.on('data', (data) => {
@@ -217,11 +234,10 @@
 
                 if (currentQuestion.type === "text") {
                     typedAnswers.push({ name: data.name, text: data.choice });
-                    // Soft matching text strings (ignoring case/spaces)
                     let normalPlayer = data.choice.trim().toLowerCase();
                     let normalAnswer = currentQuestion.f.trim().toLowerCase();
                     if (normalPlayer === normalAnswer) {
-                        scores[data.name] += 150 + (timeLeft * 5); // Text entry rounds yield higher base reward
+                        scores[data.name] += 150 + (timeLeft * 5); 
                     }
                 } else {
                     votes[data.choice] = (votes[data.choice] || 0) + 1;
@@ -311,7 +327,10 @@
         } else {
             document.getElementById("options-grid").classList.remove("hidden");
             document.getElementById("text-results-area").classList.add("hidden");
-            order = [curr.f, ...curr.w].sort(() => 0.5 - Math.random());
+            
+            // FIX 2: Check if curr.w exists before spreading it to avoid a crash on text rounds
+            const wrongAnswers = curr.w || [];
+            order = [curr.f, ...wrongAnswers].sort(() => 0.5 - Math.random());
             
             let nodes = document.querySelectorAll("#options-grid .option");
             nodes.forEach((node, i) => {
@@ -334,7 +353,7 @@
             }
             connections[p].send({
                 type: 'ASK',
-                qMode: curr.type, // 'choice' or 'text'
+                qMode: curr.type, 
                 options: order,
                 targets: pList.filter(x => x !== p),
                 item: item
