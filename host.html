@@ -49,7 +49,6 @@
         .option.correct .opt-bar { background: rgba(16, 185, 129, 0.15); }
         .option.wrong { opacity: 0.4; }
 
-        /* Free response text answers list */
         .text-results-box { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 30px; }
         .text-results-box h4 { margin: 0 0 10px 0; color: #94a3b8; }
         .text-answer-item { padding: 10px; border-radius: 6px; margin-bottom: 6px; font-weight: bold; background: rgba(255,255,255,0.05); }
@@ -151,62 +150,21 @@
         { f: "Une pince a trombone", e: "A binder clip", w: ["A thumbtack", "Chess", "A binder"], type: "choice" }
     ];
 
+    const roomCode = Math.random().toString(36).substring(2,6).toUpperCase();
     let scores = {}, peerIds = {}, connections = {}, banned = new Set();
     
     let qIdx = 0, timeLeft = 25, timerInterval = null, answersCount = 0, state = "LOBBY", order = [];
     let votes = {}, protectedPlayers = new Set(), answeredPlayers = new Set(), selectedModUser = "";
-    let typedAnswers = []; 
+    let typedAnswers = [];
 
-    // FIX 1: Let PeerJS handle global unique generation to avoid mesh cloud ID collisions
-    const peer = new Peer();
+    const peer = new Peer(roomCode);
 
     peer.on('open', (id) => {
-        // Display the unique generated room code safely
         document.getElementById("room-code").innerText = "ROOM CODE: " + id;
-        
-        if (document.readyState === "complete" || document.readyState === "interactive") {
-            generateHostQRCode(id);
-        } else {
-            window.addEventListener('DOMContentLoaded', () => generateHostQRCode(id));
-        }
+        new QRCode(document.getElementById("qrcode"), { text: window.location.href.replace("host.html", PLAYER_PAGE_URL) + "?room=" + id, width: 180, height: 180 });
     });
-
-    // FIX 2: Global error catch to ensure smooth debugging if signaling servers hang
-    peer.on('error', (err) => {
-        console.error("PeerJS Error Trap:", err.type, err);
-        if(err.type === 'unavailable-id') {
-            alert("Signaling collision encountered. Refreshing room structural link.");
-            window.location.reload();
-        }
-    });
-
-    function generateHostQRCode(id) {
-        const qrEl = document.getElementById("qrcode");
-        if (qrEl) {
-            qrEl.innerHTML = ""; 
-            new QRCode(qrEl, { 
-                text: window.location.href.replace("host.html", PLAYER_PAGE_URL) + "?room=" + id, 
-                width: 180, 
-                height: 180 
-            });
-        }
-    }
 
     peer.on('connection', (conn) => {
-        // Add disconnect cleanup listener directly to individual connection configurations
-        conn.on('close', () => {
-            // Find who owned this specific connection structure and wipe them clean to prevent loop freezing
-            for (let name in connections) {
-                if (connections[name].peer === conn.peer) {
-                    delete scores[name];
-                    delete peerIds[name];
-                    delete connections[name];
-                    updateLobby();
-                    break;
-                }
-            }
-        });
-
         conn.on('data', (data) => {
             let pId = conn.peer;
             if (banned.has(pId)) {
@@ -350,9 +308,7 @@
         } else {
             document.getElementById("options-grid").classList.remove("hidden");
             document.getElementById("text-results-area").classList.add("hidden");
-            
-            const wrongAnswers = curr.w || [];
-            order = [curr.f, ...wrongAnswers].sort(() => 0.5 - Math.random());
+            order = [curr.f, ...curr.w].sort(() => 0.5 - Math.random());
             
             let nodes = document.querySelectorAll("#options-grid .option");
             nodes.forEach((node, i) => {
@@ -375,7 +331,7 @@
             }
             connections[p].send({
                 type: 'ASK',
-                qMode: curr.type, 
+                qMode: curr.type,
                 options: order,
                 targets: pList.filter(x => x !== p),
                 item: item
