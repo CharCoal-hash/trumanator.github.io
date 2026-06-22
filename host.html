@@ -168,14 +168,14 @@
         box.scrollTop = box.scrollHeight;
         console.log(`[Diagnostic] ${msg}`);
     }
-
+    
     const questions = [
-        { f: "Une presse papier", e: "A clipboard", w: ["A thumbtack", "Chess", "A pencil sharpener"], type: "choice" },
-        { f: "Une punaise", e: "A thumbtack", w: ["A clipboard", "A binder", "A binder clip"], type: "choice" },
-        { f: "Le jeu d’échecs", e: "Chess", w: ["A pencil sharpener", "A clipboard", "A binder"], type: "choice" },
-        { f: "Un taille-crayon", e: "A pencil sharpener", type: "text" }, 
-        { f: "Un classeur", e: "A binder", w: ["A clipboard", "A pencil sharpener", "A binder clip"], type: "choice" },
-        { f: "Une pince a trombone", e: "A binder clip", w: ["A thumbtack", "Chess", "A binder"], type: "choice" }
+        { f: "Un porte-bloc", e: "A clipboard", w: ["Une punaise", "Le jeu d’échecs", "Un taille-crayon"], type: "choice" },
+        { f: "Une punaise", e: "A thumbtack", w: ["Un porte-bloc", "Un classeur", "Une pince à dessin"], type: "choice" },
+        { f: "Le jeu d’échecs", e: "Chess", w: ["Un taille-crayon", "Un porte-bloc", "Un classeur"], type: "choice" },
+        { f: "Un taille-crayon", e: "A pencil sharpener", w: [], type: "text" }, 
+        { f: "Un classeur", e: "A binder", w: ["Un porte-bloc", "Un taille-crayon", "Une pince à dessin"], type: "choice" },
+        { f: "Une pince à dessin", e: "A binder clip", w: ["Une punaise", "Le jeu d’échecs", "Un classeur"], type: "choice" }
     ];
 
     const roomCode = Math.random().toString(36).substring(2,6).toUpperCase();
