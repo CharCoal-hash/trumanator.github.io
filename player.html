@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Controller (v1.1.0)</title>
+    <title>French Quiz - Controller (v1.2.0)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -37,7 +37,6 @@
         .loader { width: 40px; height: 40px; border: 4px solid #475569; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* DEBUG STYLES */
         .debug-panel { width: 100%; max-width: 400px; background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; text-align: left; }
         .debug-title { font-size: 0.75rem; font-weight: bold; color: #475569; margin-bottom: 5px; text-transform: uppercase; display: flex; justify-content: space-between; }
         .debug-text { font-family: monospace; font-size: 0.75rem; color: #38bdf8; max-height: 90px; overflow-y: auto; white-space: pre-wrap; }
@@ -48,7 +47,7 @@
 <body>
 
 <div class="wrapper">
-    <div class="v-tag">CONTROLLER v1.1.0</div>
+    <div class="v-tag">CONTROLLER v1.2.0</div>
     
     <div class="header">
         <div id="hud-user">Player</div>
@@ -128,21 +127,21 @@
         console.log(`[Controller Debug] ${text}`);
     }
 
+    // Input safety guard logic running directly on DOM ready execution
     window.addEventListener('DOMContentLoaded', () => {
         writeTrace(`Parsing URL parameters. Detected Target ID Room string: [${hostRoomId}]`);
         if (!hostRoomId) {
-            const err = "Error: Invalid Room URL parameter. Scan the Host QR code to join.";
-            document.getElementById("error-msg").innerText = err;
-            writeTrace(err, 'err');
+            document.getElementById("error-msg").innerHTML = "<strong>Error: Missing Room ID.</strong><br>Please scan the Host QR code to join this session.";
+            document.querySelector("#view-join .btn").disabled = true;
+            document.querySelector("#view-join .btn").style.opacity = "0.4";
+            document.querySelector("#view-join .btn").style.cursor = "not-allowed";
+            document.getElementById("name-input").disabled = true;
+            writeTrace("Room parameter validation failed. Connection system structural inputs locked down.", 'err');
         }
     });
 
     function connect() {
-        if (!hostRoomId) {
-            writeTrace("Aborting connection chain. hostRoomId parameters missing.", 'err');
-            alert("Cannot connect! You need a valid room link from the Host screen.");
-            return;
-        }
+        if (!hostRoomId) return;
 
         myName = document.getElementById("name-input").value.trim();
         if(!myName) return alert("Enter a name");
@@ -150,13 +149,11 @@
         writeTrace(`Instantiating Peer identity socket interface configuration...`);
         
         peer = new Peer();
-        
         peer.on('open', (id) => {
             writeTrace(`Client node created successfully. Local footprint identifier: ${id}`, 'ok');
             writeTrace(`Attempting handshake bridge pipe to host target: [${hostRoomId}]`);
             
             conn = peer.connect(hostRoomId);
-            
             conn.on('open', () => { 
                 writeTrace("Transport bridge channel connected! Shipping 'JOIN' verification payload.", 'ok');
                 conn.send({ type: 'JOIN', name: myName }); 
@@ -191,20 +188,15 @@
                     displayReveal(msg.correct);
                 }
             });
-
             conn.on('close', () => { 
                 writeTrace("Channel disconnected or severed by host endpoint.", 'err');
                 showAlert("Disconnected", "Host closed connection."); 
-            });
-            
-            conn.on('error', (e) => {
-                writeTrace(`Channel error detected: ${e.message}`, 'err');
             });
         });
 
         peer.on('error', (err) => {
             writeTrace(`Fatal PeerJS network frame infrastructure issue: ${err.type}`, 'err');
-            document.getElementById("error-msg").innerText = "Connection failed. Retrying...";
+            document.getElementById("error-msg").innerText = "Connection failed. Please refresh and retry.";
         });
     }
 
@@ -283,7 +275,7 @@
             inventory.splice(idx, 1);
             renderItems();
             writeTrace("Deploying shielding data message to network pipe.");
-            conn.send({ type: 'USE_BLOCK', name: myName });
+            if(conn && conn.open) conn.send({ type: 'USE_BLOCK', name: myName });
             alert("🛡️ Block active! Attacks on you this round will backfire.");
         } else if (type === "STRIKE") {
             let val = document.getElementById("target-select").value;
@@ -303,7 +295,7 @@
         renderItems();
 
         writeTrace(`Deploying offensive item request vector onto element identifier: ${target}`);
-        conn.send({ type: 'USE_STRIKE', name: myName, target: target });
+        if(conn && conn.open) conn.send({ type: 'USE_STRIKE', name: myName, target: target });
         alert(`💥 Strike launched at ${target}!`);
     }
 
@@ -317,7 +309,7 @@
         document.getElementById("quiz-waiting").classList.remove("hidden");
 
         writeTrace(`Submitting grid string answer selection: "${btn.innerText}"`);
-        conn.send({ type: 'SUBMIT', name: myName, choice: btn.innerText });
+        if(conn && conn.open) conn.send({ type: 'SUBMIT', name: myName, choice: btn.innerText });
     }
 
     function submitTextAnswer() {
@@ -331,7 +323,7 @@
         document.getElementById("quiz-waiting").classList.remove("hidden");
 
         writeTrace(`Submitting free-text answer string selection: "${ans}"`);
-        conn.send({ type: 'SUBMIT', name: myName, choice: ans });
+        if(conn && conn.open) conn.send({ type: 'SUBMIT', name: myName, choice: ans });
     }
 
     function displayReveal(correct) {
@@ -357,6 +349,7 @@
         }
     }
 
+    UX framework fallback interface updates
     function showAlert(title, msg) {
         writeTrace(`Forcing system state warning modal: [${title}] ${msg}`, 'err');
         document.getElementById("view-join").classList.add("hidden");
