@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Controller (v1.2.0)</title>
+    <title>French Quiz - Controller (v1.2.1)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -15,6 +15,7 @@
         
         input[type="text"] { width: 100%; padding: 14px; font-size: 1.1rem; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: white; margin-bottom: 15px; text-align: center; }
         .btn { width: 100%; background: #4f46e5; color: white; border: none; padding: 14px; font-size: 1.1rem; font-weight: bold; border-radius: 10px; cursor: pointer; }
+        .btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
 
         .choices { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .opt-btn { background: #334155; border: 2px solid #475569; padding: 16px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; }
@@ -37,9 +38,10 @@
         .loader { width: 40px; height: 40px; border: 4px solid #475569; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* DEBUG STYLES */
         .debug-panel { width: 100%; max-width: 400px; background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; text-align: left; }
         .debug-title { font-size: 0.75rem; font-weight: bold; color: #475569; margin-bottom: 5px; text-transform: uppercase; display: flex; justify-content: space-between; }
-        .debug-text { font-family: monospace; font-size: 0.75rem; color: #38bdf8; max-height: 90px; overflow-y: auto; white-space: pre-wrap; }
+        .debug-text { font-family: monospace; font-size: 0.75rem; color: #38bdf8; max-height: 110px; overflow-y: auto; white-space: pre-wrap; line-height: 1.4; }
         .dbg-err { color: #f43f5e; }
         .dbg-ok { color: #34d399; }
     </style>
@@ -47,28 +49,32 @@
 <body>
 
 <div class="wrapper">
-    <div class="v-tag">CONTROLLER v1.2.0</div>
+    <div class="v-tag">CONTROLLER v1.2.1</div>
     
     <div class="header">
         <div id="hud-user">Player</div>
         <div id="hud-status" style="color:#fbbf24;">Lobby</div>
     </div>
 
+    <!-- REGISTER VIEW -->
     <div id="view-join">
         <h2>Join Game</h2>
         <input type="text" id="name-input" placeholder="Enter Nickname" maxlength="12">
-        <button class="btn" onclick="connect()">Connect</button>
+        <button class="btn" id="connect-btn" onclick="connect()">Connect</button>
         <p id="error-msg" style="color:#ef4444; margin-top:10px; font-size:0.9rem;"></p>
     </div>
 
+    <!-- INTERMISSION LOADING BANNER -->
     <div id="view-wait" class="hidden">
         <h3 id="wait-msg">Connected</h3>
         <div class="loader"></div>
     </div>
 
+    <!-- QUIZ SYSTEM ENGINE CONTAINER -->
     <div id="view-quiz" class="hidden">
         <h3 id="quiz-title" style="margin: 0 0 5px 0;">Select Answer</h3>
         
+        <!-- VARIANT A: MULTIPLE CHOICE BUTTONS -->
         <div class="choices" id="choices-box">
             <button class="opt-btn" onclick="selectChoice(this)"></button>
             <button class="opt-btn" onclick="selectChoice(this)"></button>
@@ -76,6 +82,7 @@
             <button class="opt-btn" onclick="selectChoice(this)"></button>
         </div>
 
+        <!-- VARIANT B: FREE TEXT BOX ENTRY FIELD -->
         <div class="text-entry-container hidden" id="text-box-container">
             <input type="text" id="text-answer-input" placeholder="Type answer in French..." autocomplete="off">
             <button class="btn" onclick="submitTextAnswer()">Submit Answer</button>
@@ -90,18 +97,21 @@
             <button class="btn" style="padding:8px; font-size:0.9rem; margin-top:8px; background:#ef4444;" onclick="fireStrike()">Confirm Strike</button>
         </div>
         
+        <!-- WAITING FOR HOST REVEAL INDICATOR -->
         <div id="quiz-waiting" class="hidden" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
             <div class="loader" style="width:24px; height:24px; margin:5px auto;"></div>
             <span style="font-size:0.85rem; color:#94a3b8;">Answer locked. Waiting for host...</span>
         </div>
     </div>
 
+    <!-- GENERIC DISCONNECT DISPLAY -->
     <div id="view-alert" class="hidden">
         <h2 id="alert-title">Disconnected</h2>
         <p id="alert-desc">Lost connection to server.</p>
     </div>
 </div>
 
+<!-- DIAGNOSTIC OUTPUT WINDOW -->
 <div class="debug-panel">
     <div class="debug-title">
         <span>Local Controller Trace Log</span>
@@ -111,71 +121,92 @@
 </div>
 
 <script>
-    const params = new URLSearchParams(window.location.search);
-    const hostRoomId = params.get('room');
-    
-    let peer, conn, myName = "", alive = false, activeChoiceBtn = null, currentMode = "choice";
+    let hostRoomId = null;
+    let peer = null;
+    let conn = null;
+    let myName = "";
+    let alive = false;
+    let activeChoiceBtn = null;
+    let currentMode = "choice";
     let inventory = [];
 
     function writeTrace(text, variant = '') {
         const pane = document.getElementById("dbg-box");
+        if (!pane) return;
         let styled = '';
         if (variant === 'ok') styled = 'class="dbg-ok"';
         if (variant === 'err') styled = 'class="dbg-err"';
-        pane.innerHTML += `\n<span ${styled}>> ${text}</span>`;
+        
+        const ts = new Date().toTimeString().split(' ')[0];
+        pane.innerHTML += `\n<span ${styled}>[${ts}] ${text}</span>`;
         pane.scrollTop = pane.scrollHeight;
-        console.log(`[Controller Debug] ${text}`);
+        console.log(`[Controller] ${text}`);
     }
 
-    // Input safety guard logic running directly on DOM ready execution
-    window.addEventListener('DOMContentLoaded', () => {
+    // Protection Engine: Enforce strict sequence rendering on Window load
+    window.onload = function() {
+        const params = new URLSearchParams(window.location.search);
+        hostRoomId = params.get('room');
+        
         writeTrace(`Parsing URL parameters. Detected Target ID Room string: [${hostRoomId}]`);
+        
         if (!hostRoomId) {
-            document.getElementById("error-msg").innerHTML = "<strong>Error: Missing Room ID.</strong><br>Please scan the Host QR code to join this session.";
-            document.querySelector("#view-join .btn").disabled = true;
-            document.querySelector("#view-join .btn").style.opacity = "0.4";
-            document.querySelector("#view-join .btn").style.cursor = "not-allowed";
-            document.getElementById("name-input").disabled = true;
-            writeTrace("Room parameter validation failed. Connection system structural inputs locked down.", 'err');
+            const err = "Error: Invalid Room URL parameter. Scan the Host QR code to join.";
+            document.getElementById("error-msg").innerText = err;
+            document.getElementById("connect-btn").disabled = true;
+            writeTrace(err, 'err');
+        } else {
+            writeTrace(`Room ID verified (${hostRoomId}). System ready for connection handshake request.`, 'ok');
         }
-    });
+    };
 
     function connect() {
-        if (!hostRoomId) return;
+        if (!hostRoomId) {
+            writeTrace("Aborting connection process: Missing critical room URL parameter.", 'err');
+            return;
+        }
 
         myName = document.getElementById("name-input").value.trim();
-        if(!myName) return alert("Enter a name");
-        document.getElementById("error-msg").innerText = "Connecting...";
-        writeTrace(`Instantiating Peer identity socket interface configuration...`);
+        if(!myName) {
+            alert("Please enter a valid nickname before joining.");
+            return;
+        }
         
+        document.getElementById("error-msg").style.color = "#fbbf24";
+        document.getElementById("error-msg").innerText = "Connecting to global network matrix...";
+        document.getElementById("connect-btn").disabled = true;
+        
+        writeTrace(`Initializing dynamic PeerJS socket allocation node...`);
         peer = new Peer();
+        
         peer.on('open', (id) => {
-            writeTrace(`Client node created successfully. Local footprint identifier: ${id}`, 'ok');
-            writeTrace(`Attempting handshake bridge pipe to host target: [${hostRoomId}]`);
+            writeTrace(`Client signature assigned successfully. Endpoint token: ${id}`, 'ok');
+            writeTrace(`Attempting network bridge generation to host code room: [${hostRoomId}]`);
             
             conn = peer.connect(hostRoomId);
+            
             conn.on('open', () => { 
-                writeTrace("Transport bridge channel connected! Shipping 'JOIN' verification payload.", 'ok');
+                writeTrace("Handshake complete! Sending player 'JOIN' identification metadata payload.", 'ok');
                 conn.send({ type: 'JOIN', name: myName }); 
             });
 
             conn.on('data', (msg) => {
-                writeTrace(`Rx [Incoming Packets]: ${JSON.stringify(msg)}`);
+                writeTrace(`Rx Payload received: ${JSON.stringify(msg)}`);
                 
                 if(msg.type === 'JOIN_OK') {
                     myName = msg.name;
                     document.getElementById("hud-user").innerText = myName;
                     document.getElementById("view-join").classList.add("hidden");
                     showWait("Waiting for Host", "Connected to session. Standby for start.");
-                    writeTrace(`Lobby admission granted. Identity bound to: ${myName}`, 'ok');
+                    writeTrace(`Lobby allocation successful. Registered as user handle: ${myName}`, 'ok');
                 }
                 if(msg.type === 'RENAME') {
-                    writeTrace(`Host forced moniker update: ${myName} -> ${msg.name}`);
+                    writeTrace(`Host forced moniker transformation: ${myName} -> ${msg.name}`);
                     myName = msg.name;
                     document.getElementById("hud-user").innerText = myName;
                 }
-                if(msg.type === 'KICK') showAlert("Kicked", "You were removed.");
-                if(msg.type === 'BANNED') showAlert("Banned", "Your device is banned.");
+                if(msg.type === 'KICK') showAlert("Kicked", "You were removed by the session host.");
+                if(msg.type === 'BANNED') showAlert("Banned", "Your device footprint has been blacklisted.");
                 
                 if (msg.type === 'ASK') {
                     if (msg.item) {
@@ -188,15 +219,22 @@
                     displayReveal(msg.correct);
                 }
             });
+
             conn.on('close', () => { 
-                writeTrace("Channel disconnected or severed by host endpoint.", 'err');
-                showAlert("Disconnected", "Host closed connection."); 
+                writeTrace("Data connection pipeline dropped by the remote host.", 'err');
+                showAlert("Disconnected", "Host closed the active connection channel."); 
+            });
+            
+            conn.on('error', (e) => {
+                writeTrace(`Pipeline exception thrown: ${e.message}`, 'err');
             });
         });
 
         peer.on('error', (err) => {
-            writeTrace(`Fatal PeerJS network frame infrastructure issue: ${err.type}`, 'err');
-            document.getElementById("error-msg").innerText = "Connection failed. Please refresh and retry.";
+            writeTrace(`Fatal network socket interruption: ${err.type} - ${err.message}`, 'err');
+            document.getElementById("error-msg").style.color = "#ef4444";
+            document.getElementById("error-msg").innerText = "Connection failed. Please check your network and refresh.";
+            document.getElementById("connect-btn").disabled = false;
         });
     }
 
@@ -212,7 +250,7 @@
         alive = true;
         activeChoiceBtn = null;
         currentMode = qMode || "choice";
-        writeTrace(`Building view state configuration layers for type framework: ${currentMode}`);
+        writeTrace(`Constructing active layout viewport. Active Mode: ${currentMode}`);
         
         document.getElementById("hud-status").innerText = "Active";
         document.getElementById("hud-status").style.color = "#10b981";
@@ -274,8 +312,8 @@
         if (type === "BLOCK") {
             inventory.splice(idx, 1);
             renderItems();
-            writeTrace("Deploying shielding data message to network pipe.");
-            if(conn && conn.open) conn.send({ type: 'USE_BLOCK', name: myName });
+            writeTrace("Broadcasting armor activation flag up to peer stream.");
+            conn.send({ type: 'USE_BLOCK', name: myName });
             alert("🛡️ Block active! Attacks on you this round will backfire.");
         } else if (type === "STRIKE") {
             let val = document.getElementById("target-select").value;
@@ -294,8 +332,8 @@
         document.getElementById("strike-panel").classList.add("hidden");
         renderItems();
 
-        writeTrace(`Deploying offensive item request vector onto element identifier: ${target}`);
-        if(conn && conn.open) conn.send({ type: 'USE_STRIKE', name: myName, target: target });
+        writeTrace(`Deploying weapon projectile packet trajectory targeting signature: ${target}`);
+        conn.send({ type: 'USE_STRIKE', name: myName, target: target });
         alert(`💥 Strike launched at ${target}!`);
     }
 
@@ -308,8 +346,8 @@
         document.querySelectorAll("#choices-box .opt-btn").forEach(b => b.disabled = true);
         document.getElementById("quiz-waiting").classList.remove("hidden");
 
-        writeTrace(`Submitting grid string answer selection: "${btn.innerText}"`);
-        if(conn && conn.open) conn.send({ type: 'SUBMIT', name: myName, choice: btn.innerText });
+        writeTrace(`Locking grid alternative solution choice: "${btn.innerText}"`);
+        conn.send({ type: 'SUBMIT', name: myName, choice: btn.innerText });
     }
 
     function submitTextAnswer() {
@@ -322,18 +360,18 @@
         document.querySelector("#text-box-container button").disabled = true;
         document.getElementById("quiz-waiting").classList.remove("hidden");
 
-        writeTrace(`Submitting free-text answer string selection: "${ans}"`);
-        if(conn && conn.open) conn.send({ type: 'SUBMIT', name: myName, choice: ans });
+        writeTrace(`Locking text buffer dynamic solution input choice: "${ans}"`);
+        conn.send({ type: 'SUBMIT', name: myName, choice: ans });
     }
 
     function displayReveal(correct) {
         alive = false;
         document.getElementById("quiz-waiting").classList.add("hidden");
-        writeTrace(`Display Reveal payload executed. Intended value target matches key: ${correct}`);
+        writeTrace(`Display Reveal payload executed. Evaluation objective payload string: ${correct}`);
         
         if (currentMode === "text") {
-            let entry = document.getElementById("text-answer-input").value.trim().toLowerCase();
-            let actual = correct.trim().toLowerCase();
+            let entry = document.getElementById("text-answer-input").value.trim().toLowerCase().replace(/[\s-]/g, '');
+            let actual = correct.trim().toLowerCase().replace(/[\s-]/g, '');
             if (entry === actual) {
                 alert("Correct! 🎉 +150 Points!");
             } else {
@@ -349,9 +387,8 @@
         }
     }
 
-    UX framework fallback interface updates
     function showAlert(title, msg) {
-        writeTrace(`Forcing system state warning modal: [${title}] ${msg}`, 'err');
+        writeTrace(`Triggering unrecoverable structural exit loop interface state: [${title}]`, 'err');
         document.getElementById("view-join").classList.add("hidden");
         document.getElementById("view-wait").classList.add("hidden");
         document.getElementById("view-quiz").classList.add("hidden");
