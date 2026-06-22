@@ -25,7 +25,7 @@
         /* Text Input styling components */
         .text-entry-container { margin: 15px 0; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; }
 
-        .item-row { display: flex; gap: 10px; margin-top: 15px; min-height: 45px; justify-content: center; }
+        .item-row { display: flex; gap: 10px; margin-top: 15px; min-height: 45px; justify-content: center; flex-wrap: wrap; }
         .i-btn { padding: 10px 16px; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; }
         .i-strike { background: #ef4444; }
         .i-block { background: #3b82f6; }
@@ -49,7 +49,7 @@
     <div id="view-join">
         <h2>Join Game</h2>
         <input type="text" id="name-input" placeholder="Enter Nickname" maxlength="12">
-        <button class="btn" onclick="connect()">Connect</button>
+        <button class="btn" id="connect-main-btn" onclick="connect()">Connect</button>
         <p id="error-msg" style="color:#ef4444; margin-top:10px; font-size:0.9rem;"></p>
     </div>
 
@@ -70,7 +70,7 @@
 
         <div class="text-entry-container hidden" id="text-box-container">
             <input type="text" id="text-answer-input" placeholder="Type answer in French..." autocomplete="off">
-            <button class="btn" onclick="submitTextAnswer()">Submit Answer</button>
+            <button class="btn" style="margin-top:10px;" onclick="submitTextAnswer()">Submit Answer</button>
         </div>
 
         <div style="font-size:0.85rem; font-weight:bold; color:#94a3b8; margin-top:15px; text-align:left;">Inventory:</div>
@@ -93,6 +93,7 @@
         <p id="alert-desc">Lost connection to server.</p>
     </div>
 </div>
+
 <script>
     const params = new URLSearchParams(window.location.search);
     const hostRoomId = params.get('room');
@@ -100,41 +101,66 @@
     let peer, conn, myName = "", alive = false, activeChoiceBtn = null, currentMode = "choice";
     let inventory = [];
 
-    if (!hostRoomId) document.getElementById("error-msg").innerText = "Error: Invalid Room URL parameter.";
+    if (!hostRoomId) {
+        document.getElementById("error-msg").innerText = "Error: Invalid Room URL parameter missing.";
+        document.getElementById("connect-main-btn").disabled = true;
+    }
 
     function connect() {
         myName = document.getElementById("name-input").value.trim();
         if(!myName) return alert("Enter a name");
-        document.getElementById("error-msg").innerText = "Connecting...";
+        document.getElementById("error-msg").innerText = "Connecting to signaling server...";
         
         peer = new Peer();
+        
         peer.on('open', () => {
-            conn = peer.connect(hostRoomId);
-            conn.on('open', () => { conn.send({ type: 'JOIN', name: myName }); });
+            document.getElementById("error-msg").innerText = "Connecting to Host room...";
+            
+            // Add a safety millisecond defer timeout loop to allow local signals to propagate securely
+            setTimeout(() => {
+                conn = peer.connect(hostRoomId);
+                setupConnectionListeners();
+            }, 150);
+        });
 
-            conn.on('data', (msg) => {
-                if(msg.type === 'JOIN_OK') {
-                    myName = msg.name;
-                    document.getElementById("hud-user").innerText = myName;
-                    document.getElementById("view-join").classList.add("hidden");
-                    showWait("Waiting for Host", "Connected to session. Standby for start.");
-                }
-                if(msg.type === 'RENAME') {
-                    myName = msg.name;
-                    document.getElementById("hud-user").innerText = myName;
-                }
-                if(msg.type === 'KICK') showAlert("Kicked", "You were removed.");
-                if(msg.type === 'BANNED') showAlert("Banned", "Your device is banned.");
-                
-                if (msg.type === 'ASK') {
-                    if (msg.item) inventory.push(msg.item);
-                    displayQuestion(msg.qMode, msg.options, msg.targets);
-                }
-                if (msg.type === 'REVEAL') {
-                    displayReveal(msg.correct);
-                }
-            });
-            conn.on('close', () => { showAlert("Disconnected", "Host closed connection."); });
+        peer.on('error', (err) => {
+            console.error("PeerJS Error Handler:", err);
+            document.getElementById("error-msg").innerText = "Connection lost. Try checking room code values.";
+        });
+    }
+
+    function setupConnectionListeners() {
+        if (!conn) return;
+
+        conn.on('open', () => { 
+            conn.send({ type: 'JOIN', name: myName }); 
+        });
+
+        conn.on('data', (msg) => {
+            if(msg.type === 'JOIN_OK') {
+                myName = msg.name;
+                document.getElementById("hud-user").innerText = myName;
+                document.getElementById("view-join").classList.add("hidden");
+                showWait("Waiting for Host", "Connected to session. Standby for start.");
+            }
+            if(msg.type === 'RENAME') {
+                myName = msg.name;
+                document.getElementById("hud-user").innerText = myName;
+            }
+            if(msg.type === 'KICK') showAlert("Kicked", "You were removed.");
+            if(msg.type === 'BANNED') showAlert("Banned", "Your device is banned.");
+            
+            if (msg.type === 'ASK') {
+                if (msg.item) inventory.push(msg.item);
+                displayQuestion(msg.qMode, msg.options, msg.targets);
+            }
+            if (msg.type === 'REVEAL') {
+                displayReveal(msg.correct);
+            }
+        });
+
+        conn.on('close', () => { 
+            showAlert("Disconnected", "Host closed connection or you dropped out."); 
         });
     }
 
@@ -192,7 +218,6 @@
         renderItems();
     }
 
-    // FIX 1: Cleaned up UI building loop to prevent index matching bugs
     function renderItems() {
         let box = document.getElementById("inventory-box");
         box.innerHTML = "";
@@ -204,12 +229,19 @@
             let btn = document.createElement("button");
             btn.className = item === "STRIKE" ? "i-btn i-strike" : "i-btn i-block";
             btn.innerText = item === "STRIKE" ? "💥 Strike" : "🛡️ Block";
-            btn.onclick = () => useItem(item, idx);
+            // FIXED 2: Used data-attributes to track identities safely bypassing structural array closures
+            btn.setAttribute("data-item-idx", idx);
+            btn.onclick = (e) => {
+                let actualIndex = parseInt(e.target.getAttribute("data-item-idx"));
+                useItem(item, actualIndex);
+            };
             box.appendChild(btn);
         });
     }
 
     function useItem(type, idx) {
+        if (!alive) return; // Prevent items from being spent post-submission
+        
         if (type === "BLOCK") {
             inventory.splice(idx, 1);
             renderItems();
@@ -221,7 +253,7 @@
             
             let panel = document.getElementById("strike-panel");
             panel.classList.remove("hidden");
-            panel.setAttribute("data-idx", idx); // set directly as element attribute safely
+            panel.setAttribute("data-idx", idx); 
         }
     }
 
@@ -272,7 +304,7 @@
             let entry = document.getElementById("text-answer-input").value.trim().toLowerCase();
             let actual = correct.trim().toLowerCase();
             if (entry === actual) {
-                alert("Correct! 🎉 +150 Points!");
+                alert("Correct! 🎉!");
             } else {
                 alert(`Incorrect. The proper term was: ${correct}`);
             }
