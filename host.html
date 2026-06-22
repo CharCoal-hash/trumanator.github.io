@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projet de Vocab - Host</title>
+    <title>Projet de Vocab - Host (v1.1.0)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -18,9 +18,10 @@
         * { box-sizing: border-box; }
         body {
             font-family: system-ui, sans-serif; margin: 0; padding: 20px; min-height: 100vh; 
-            color: #f8fafc; background: var(--bg-dark); display: flex; justify-content: center; align-items: center;
+            color: #f8fafc; background: var(--bg-dark); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;
         }
-        .container { width: 100%; max-width: 900px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; }
+        .container { width: 100%; max-width: 900px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; position: relative; }
+        .v-tag { position: absolute; top: 15px; right: 20px; font-size: 0.8rem; font-family: monospace; color: #64748b; font-weight: bold; }
         h1 { margin: 0 0 10px 0; font-size: 2.5rem; }
         .subtitle { color: #94a3b8; margin-bottom: 30px; font-size: 1.1rem; }
         
@@ -62,11 +63,20 @@
         .modal-inner input { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; border: 1px solid var(--border); background: #0f172a; color: white; }
         .modal-btns { display: flex; flex-direction: column; gap: 8px; }
         .m-btn { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+        /* DEBUG STYLES */
+        .debug-console { width: 100%; max-width: 900px; background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; text-align: left; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8); }
+        .debug-header { font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
+        .debug-logs { font-family: monospace; font-size: 0.8rem; color: #38bdf8; max-height: 120px; overflow-y: auto; white-space: pre-wrap; line-height: 1.4; }
+        .log-err { color: #f43f5e; }
+        .log-ok { color: #34d399; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="v-tag">HOST ENGINE v1.1.0</div>
+    
     <div id="view-lobby">
         <h1>Projet de Vocabulaire</h1>
         <p class="subtitle">Scan to join the room</p>
@@ -125,6 +135,14 @@
     </div>
 </div>
 
+<div class="debug-console">
+    <div class="debug-header">
+        <span>Diagnostics Console</span>
+        <span style="cursor:pointer; text-decoration:underline;" onclick="document.getElementById('log-box').innerHTML=''">Clear Log</span>
+    </div>
+    <div class="debug-logs" id="log-box">Initializing host execution engine...</div>
+</div>
+
 <div class="modal hidden" id="mod-modal">
     <div class="modal-inner">
         <h3 id="mod-title" style="margin-top:0;">Manage Player</h3>
@@ -141,7 +159,17 @@
 <script>
     const PLAYER_PAGE_URL = "player.html";
 
-    // Cleaned up the spelling/gender typos ("Un taille-crayon" / "Un classeur")
+    function printLog(msg, status = '') {
+        const box = document.getElementById("log-box");
+        const ts = new Date().toTimeString().split(' ')[0];
+        let clazz = '';
+        if (status === 'ok') clazz = 'class="log-ok"';
+        if (status === 'err') clazz = 'class="log-err"';
+        box.innerHTML += `\n<span ${clazz}>[${ts}] ${msg}</span>`;
+        box.scrollTop = box.scrollHeight;
+        console.log(`[Diagnostic] ${msg}`);
+    }
+
     const questions = [
         { f: "Une presse papier", e: "A clipboard", w: ["A thumbtack", "Chess", "A pencil sharpener"], type: "choice" },
         { f: "Une punaise", e: "A thumbtack", w: ["A clipboard", "A binder", "A binder clip"], type: "choice" },
@@ -158,92 +186,128 @@
     let votes = {}, protectedPlayers = new Set(), answeredPlayers = new Set(), selectedModUser = "";
     let typedAnswers = [];
 
+    printLog(`Generating unique dynamic Room Session Code ID: ${roomCode}`);
     const peer = new Peer(roomCode);
 
     peer.on('open', (id) => {
         document.getElementById("room-code").innerText = "ROOM CODE: " + id;
+        printLog(`Handshake accepted by PeerJS Broker Cloud server. Server ID tied: ${id}`, 'ok');
         
         let targetURL = window.location.href.toLowerCase().includes("host.html") 
             ? window.location.href.replace(/host\.html/i, PLAYER_PAGE_URL)
             : window.location.href + PLAYER_PAGE_URL;
             
         targetURL += "?room=" + id;
+        printLog(`Auto-generating player destination payload pointer: ${targetURL}`);
 
         document.getElementById("qrcode").innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 180, height: 180 });
+        try {
+            new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 180, height: 180 });
+            printLog("QR Matrix structure canvas constructed successfully.", 'ok');
+        } catch(e) {
+            printLog(`QR Generation halted: ${e.message}. Fallback parameters loaded.`, 'err');
+        }
+    });
+
+    peer.on('error', (err) => {
+        printLog(`Critical PeerJS Core Socket Error caught: ${err.type} - ${err.message}`, 'err');
     });
 
     peer.on('connection', (conn) => {
+        printLog(`Inbound connection request from transport frame peer: ${conn.peer}`);
+        
+        conn.on('open', () => {
+            printLog(`Data connection framework standard optimized with peer: ${conn.peer}`, 'ok');
+        });
+
         conn.on('data', (data) => {
             let pId = conn.peer;
+            printLog(`Rx [Data Payload Stream] from ID ${pId}: ${JSON.stringify(data)}`);
+
             if (banned.has(pId)) {
+                printLog(`Intercepted forbidden payload trace from blacklisted hardware fingerprint ID: ${pId}`, 'err');
                 conn.send({ type: 'BANNED' });
                 return;
             }
 
             if (data.type === 'JOIN') {
                 let name = data.name.trim();
-                if (scores[name] !== undefined) name += "_" + Math.floor(Math.random() * 10);
+                if (scores[name] !== undefined) {
+                    name += "_" + Math.floor(Math.random() * 10);
+                    printLog(`Collision detected on moniker string. Appending numeric tail: ${name}`);
+                }
                 
                 scores[name] = 0;
                 peerIds[name] = pId;
                 connections[name] = conn;
                 
                 conn.send({ type: 'JOIN_OK', name: name });
+                printLog(`Registration confirmation packet returned to client alias: ${name}`, 'ok');
                 updateLobby();
 
-                // Setup listener for dynamic player disconnects mid-round
                 conn.on('close', () => {
+                    printLog(`Channel disconnection event tracked for user: ${name}`);
                     handleDisconnect(name);
                 });
             }
             
             if (data.type === 'USE_BLOCK') {
-                if (state !== "QUESTION") return;
+                if (state !== "QUESTION") return printLog("Block ignored. Invalid timing threshold context.", 'err');
                 protectedPlayers.add(data.name);
                 document.getElementById("game-feed").innerText = `🛡️ ${data.name} activated a Block!`;
+                printLog(`User inventory deployment updated: ${data.name} -> SHIELD MATRIX STATE TRUE`);
             }
 
             if (data.type === 'USE_STRIKE') {
-                if (state !== "QUESTION") return;
+                if (state !== "QUESTION") return printLog("Strike transaction rejected. Active turn closed.", 'err');
                 let attacker = data.name;
                 let target = data.target;
 
                 if (protectedPlayers.has(target)) {
                     scores[attacker] = Math.max(0, scores[attacker] - 400);
                     document.getElementById("game-feed").innerText = `🛡️ Countered! ${attacker} hit ${target}'s Block and lost 400 pts!`;
+                    printLog(`Attack evaluation handled: ${attacker} struck ${target}. Reflex Block triggered. Penalty applied.`);
                 } else {
                     scores[target] = Math.max(0, scores[target] - 400);
                     document.getElementById("game-feed").innerText = `💥 ${attacker} used Strike on ${target}! -400 pts.`;
+                    printLog(`Attack evaluation handled: ${attacker} deducted 400 pts from target entity: ${target}`);
                 }
             }
             
             if (data.type === 'SUBMIT') {
-                if (state !== "QUESTION" || answeredPlayers.has(data.name)) return;
+                if (state !== "QUESTION") return printLog(`Answer dropped from ${data.name}. Received outside question phase.`, 'err');
+                if (answeredPlayers.has(data.name)) return printLog(`Duplicate submit blocked from user token: ${data.name}`, 'err');
                 
                 answeredPlayers.add(data.name);
                 answersCount++;
                 document.getElementById("hud-done").innerText = `Done: ${answersCount} / ${Object.keys(scores).length}`;
                 
                 let currentQuestion = questions[qIdx];
+                printLog(`Processing score evaluations against structural question type: ${currentQuestion.type}`);
 
                 if (currentQuestion.type === "text") {
                     typedAnswers.push({ name: data.name, text: data.choice });
-                    
-                    // Added normalization to handle hyphens gracefully
                     let normalPlayer = data.choice.trim().toLowerCase().replace(/[\s-]/g, '');
                     let normalAnswer = currentQuestion.f.trim().toLowerCase().replace(/[\s-]/g, '');
+                    
                     if (normalPlayer === normalAnswer) {
-                        scores[data.name] += 150 + (timeLeft * 5); 
+                        let pts = 150 + (timeLeft * 5);
+                        scores[data.name] += pts; 
+                        printLog(`String Match validation TRUE. award values verified: +${pts} pts to ${data.name}`, 'ok');
+                    } else {
+                        printLog(`String Match validation FALSE. Comp value input: "${normalPlayer}" vs key "${normalAnswer}"`);
                     }
                 } else {
                     votes[data.choice] = (votes[data.choice] || 0) + 1;
                     if (data.choice === currentQuestion.f) {
-                        scores[data.name] += 100 + (timeLeft * 5);
+                        let pts = 100 + (timeLeft * 5);
+                        scores[data.name] += pts;
+                        printLog(`Grid selection correct validation TRUE. Award values: +${pts} pts to ${data.name}`, 'ok');
                     }
                 }
                 
                 if (answersCount >= Object.keys(scores).length) {
+                    printLog("Lobby response threshold achieved. Autoskipping cooldown steps.");
                     revealAnswer();
                 }
             }
@@ -255,6 +319,7 @@
         delete scores[name];
         delete peerIds[name];
         delete connections[name];
+        printLog(`De-allocated state allocations and references for removed player: ${name}`);
         
         if (state === "LOBBY") {
             updateLobby();
@@ -264,6 +329,7 @@
             }
             document.getElementById("hud-done").innerText = `Done: ${answersCount} / ${Object.keys(scores).length}`;
             if (Object.keys(scores).length === 0 || answersCount >= Object.keys(scores).length) {
+                printLog("Connection recalculation determined all active players have checked in. Revealing.");
                 revealAnswer();
             }
         }
@@ -301,6 +367,7 @@
         delete peerIds[selectedModUser];
         delete connections[selectedModUser];
 
+        printLog(`Administrative rename action handled: [${selectedModUser}] rewritten to [${nu}]`);
         if (connections[nu]) connections[nu].send({ type: 'RENAME', name: nu });
         updateLobby();
         closeModal();
@@ -308,13 +375,22 @@
 
     function kickPlayer() {
         let c = connections[selectedModUser];
+        printLog(`Administrative drop target initialized against target name: ${selectedModUser}`);
         if(c) { c.send({ type: 'KICK' }); setTimeout(() => c.close(), 200); }
         handleDisconnect(selectedModUser);
         closeModal();
     }
-    function banPlayer() { let id = peerIds[selectedModUser]; if(id) banned.add(id); kickPlayer(); }
+    function banPlayer() { 
+        let id = peerIds[selectedModUser]; 
+        if(id) {
+            banned.add(id);
+            printLog(`Injected hardware signature hash to runtime exclusion array list: ${id}`, 'err');
+        }
+        kickPlayer(); 
+    }
 
     function startGame() {
+        printLog("Lobby runtime closed. Booting active quiz environment UI.", 'ok');
         document.getElementById("view-lobby").classList.add("hidden");
         document.getElementById("view-game").classList.remove("hidden");
         loadQuestion();
@@ -328,9 +404,9 @@
         typedAnswers = [];
         protectedPlayers.clear();
         answeredPlayers.clear();
-        document.getElementById("game-feed").innerText = "Incoming turn items generated...";
         
         let curr = questions[qIdx];
+        printLog(`Loading index position data [${qIdx}]. Parsing question item: "${curr.e}"`, 'ok');
         document.getElementById("hud-index").innerText = qIdx + 1;
         document.getElementById("q-text").innerText = `What is "${curr.e}" in French?`;
         
@@ -362,6 +438,7 @@
             let item = null;
             if (Math.random() < 0.15) {
                 item = (Math.random() < 0.5) ? "STRIKE" : "BLOCK";
+                printLog(`Item roll hit: Provisioned item [${item}] to player client: [${p}]`);
             }
             if (connections[p]) {
                 connections[p].send({
@@ -378,13 +455,17 @@
         timerInterval = setInterval(() => {
             timeLeft--;
             document.getElementById("hud-timer").innerText = timeLeft;
-            if(timeLeft <= 0) revealAnswer();
+            if(timeLeft <= 0) {
+                printLog("Question lifecycle timer depleted.");
+                revealAnswer();
+            }
         }, 1000);
     }
 
     function revealAnswer() {
         clearInterval(timerInterval);
         state = "REVEAL";
+        printLog(`Entering reveal loop sequence for index layout: ${qIdx}`);
         
         let curr = questions[qIdx];
 
@@ -443,6 +524,7 @@
     }
 
     function showFinals() {
+        printLog("Quiz parameters exhausted. Rendering absolute point matrix calculations.", 'ok');
         document.getElementById("view-game").classList.add("hidden");
         document.getElementById("view-scores").classList.remove("hidden");
         const body = document.getElementById("leaderboard-body");
