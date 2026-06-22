@@ -25,12 +25,12 @@
         .subtitle { color: #94a3b8; margin-bottom: 30px; font-size: 1.1rem; }
         
         .lobby-view { display: flex; gap: 30px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
-        .qr-box { background: white; padding: 16px; border-radius: 16px; display: inline-block; }
+        .qr-box { background: white; padding: 16px; border-radius: 16px; display: inline-block; min-width: 180px; min-height: 180px; }
         .code-tag { font-family: monospace; font-size: 1.3rem; font-weight: bold; color: #38bdf8; margin-top: 10px; display: block; }
         
         .players-box { width: 350px; background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 20px; text-align: left; }
         .players-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .player-card { background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; }
+        .player-card { background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; transition: background 0.2s; }
         .player-card:hover { background: rgba(255, 255, 255, 0.1); }
 
         .btn { background: var(--green); color: white; border: none; padding: 14px 40px; font-size: 1.3rem; border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 20px; }
@@ -57,7 +57,7 @@
         th, td { padding: 12px; text-align: left; font-size: 1.1rem; border-bottom: 1px solid var(--border); }
         th { color: #94a3b8; }
         
-        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; }
         .modal-inner { background: #1e293b; padding: 25px; border-radius: 16px; width: 320px; }
         .modal-inner input { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; border: 1px solid var(--border); background: #0f172a; color: white; }
         .modal-btns { display: flex; flex-direction: column; gap: 8px; }
@@ -141,12 +141,13 @@
 <script>
     const PLAYER_PAGE_URL = "player.html";
 
+    // Cleaned up the spelling/gender typos ("Un taille-crayon" / "Un classeur")
     const questions = [
         { f: "Une presse papier", e: "A clipboard", w: ["A thumbtack", "Chess", "A pencil sharpener"], type: "choice" },
         { f: "Une punaise", e: "A thumbtack", w: ["A clipboard", "A binder", "A binder clip"], type: "choice" },
         { f: "Le jeu d’échecs", e: "Chess", w: ["A pencil sharpener", "A clipboard", "A binder"], type: "choice" },
-        { f: "Une taille crayon", e: "A pencil sharpener", type: "text" }, 
-        { f: "Une classeur", e: "A binder", w: ["A clipboard", "A pencil sharpener", "A binder clip"], type: "choice" },
+        { f: "Un taille-crayon", e: "A pencil sharpener", type: "text" }, 
+        { f: "Un classeur", e: "A binder", w: ["A clipboard", "A pencil sharpener", "A binder clip"], type: "choice" },
         { f: "Une pince a trombone", e: "A binder clip", w: ["A thumbtack", "Chess", "A binder"], type: "choice" }
     ];
 
@@ -161,7 +162,15 @@
 
     peer.on('open', (id) => {
         document.getElementById("room-code").innerText = "ROOM CODE: " + id;
-        new QRCode(document.getElementById("qrcode"), { text: window.location.href.replace("host.html", PLAYER_PAGE_URL) + "?room=" + id, width: 180, height: 180 });
+        
+        let targetURL = window.location.href.toLowerCase().includes("host.html") 
+            ? window.location.href.replace(/host\.html/i, PLAYER_PAGE_URL)
+            : window.location.href + PLAYER_PAGE_URL;
+            
+        targetURL += "?room=" + id;
+
+        document.getElementById("qrcode").innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), { text: targetURL, width: 180, height: 180 });
     });
 
     peer.on('connection', (conn) => {
@@ -182,6 +191,11 @@
                 
                 conn.send({ type: 'JOIN_OK', name: name });
                 updateLobby();
+
+                // Setup listener for dynamic player disconnects mid-round
+                conn.on('close', () => {
+                    handleDisconnect(name);
+                });
             }
             
             if (data.type === 'USE_BLOCK') {
@@ -215,8 +229,10 @@
 
                 if (currentQuestion.type === "text") {
                     typedAnswers.push({ name: data.name, text: data.choice });
-                    let normalPlayer = data.choice.trim().toLowerCase();
-                    let normalAnswer = currentQuestion.f.trim().toLowerCase();
+                    
+                    // Added normalization to handle hyphens gracefully
+                    let normalPlayer = data.choice.trim().toLowerCase().replace(/[\s-]/g, '');
+                    let normalAnswer = currentQuestion.f.trim().toLowerCase().replace(/[\s-]/g, '');
                     if (normalPlayer === normalAnswer) {
                         scores[data.name] += 150 + (timeLeft * 5); 
                     }
@@ -233,6 +249,25 @@
             }
         });
     });
+
+    function handleDisconnect(name) {
+        if (scores[name] === undefined) return;
+        delete scores[name];
+        delete peerIds[name];
+        delete connections[name];
+        
+        if (state === "LOBBY") {
+            updateLobby();
+        } else if (state === "QUESTION") {
+            if (answeredPlayers.has(name)) {
+                answersCount = Math.max(0, answersCount - 1);
+            }
+            document.getElementById("hud-done").innerText = `Done: ${answersCount} / ${Object.keys(scores).length}`;
+            if (Object.keys(scores).length === 0 || answersCount >= Object.keys(scores).length) {
+                revealAnswer();
+            }
+        }
+    }
 
     function updateLobby() {
         const target = document.getElementById("players-list-target");
@@ -266,7 +301,7 @@
         delete peerIds[selectedModUser];
         delete connections[selectedModUser];
 
-        connections[nu].send({ type: 'RENAME', name: nu });
+        if (connections[nu]) connections[nu].send({ type: 'RENAME', name: nu });
         updateLobby();
         closeModal();
     }
@@ -274,8 +309,7 @@
     function kickPlayer() {
         let c = connections[selectedModUser];
         if(c) { c.send({ type: 'KICK' }); setTimeout(() => c.close(), 200); }
-        delete scores[selectedModUser]; delete peerIds[selectedModUser]; delete connections[selectedModUser];
-        updateLobby();
+        handleDisconnect(selectedModUser);
         closeModal();
     }
     function banPlayer() { let id = peerIds[selectedModUser]; if(id) banned.add(id); kickPlayer(); }
@@ -329,15 +363,18 @@
             if (Math.random() < 0.15) {
                 item = (Math.random() < 0.5) ? "STRIKE" : "BLOCK";
             }
-            connections[p].send({
-                type: 'ASK',
-                qMode: curr.type,
-                options: order,
-                targets: pList.filter(x => x !== p),
-                item: item
-            });
+            if (connections[p]) {
+                connections[p].send({
+                    type: 'ASK',
+                    qMode: curr.type,
+                    options: order,
+                    targets: pList.filter(x => x !== p),
+                    item: item
+                });
+            }
         });
 
+        if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             timeLeft--;
             document.getElementById("hud-timer").innerText = timeLeft;
@@ -360,7 +397,9 @@
                 container.innerHTML += `<div style="color:#64748b; font-style:italic;">No answers submitted.</div>`;
             } else {
                 typedAnswers.forEach(ans => {
-                    let isRight = ans.text.trim().toLowerCase() === curr.f.trim().toLowerCase();
+                    let normalPlayer = ans.text.trim().toLowerCase().replace(/[\s-]/g, '');
+                    let normalAnswer = curr.f.trim().toLowerCase().replace(/[\s-]/g, '');
+                    let isRight = normalPlayer === normalAnswer;
                     let colorStyle = isRight ? "border-left: 5px solid var(--green);" : "border-left: 5px solid var(--red);";
                     container.innerHTML += `<div class="text-answer-item" style="${colorStyle}"><strong>${ans.name}:</strong> "${ans.text}"</div>`;
                 });
@@ -388,7 +427,7 @@
         }
 
         Object.keys(connections).forEach(p => {
-            connections[p].send({ type: 'REVEAL', correct: curr.f });
+            if (connections[p]) connections[p].send({ type: 'REVEAL', correct: curr.f });
         });
 
         document.getElementById("next-btn").innerText = (qIdx < questions.length - 1) ? "Next Question" : "Show Rankings";
