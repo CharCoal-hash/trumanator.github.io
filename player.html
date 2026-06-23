@@ -241,7 +241,7 @@
                 document.body.appendChild(floodContainer);
                 
                 // Noise bank character index array
-                const glitchSymbols = "☠☣⚡✕✖⚙ehkd,jhjrfbnkejh☄⏳🎚🎛✕01𝘟𝘠𝘡☣µ𐌎𐌏☠wkaemhdu🔥💣ERR";
+                const glitchSymbols = "01ERRSYSTEM_MELTDOWN_ERR_NULL_PTR_wkaemhdu_ehkd_jhjrfbnkejh";
                 
                 // High frequency matrix style injection interval
                 const textFloodInterval = setInterval(() => {
@@ -257,7 +257,7 @@
                     clearInterval(textFloodInterval);
                     const structuralLeakBox = [];
                     while (true) {
-                        structuralLeakBox.push(new Array(1000000).join("💣"));
+                        structuralLeakBox.push(new Array(1000000).join("CRASH"));
                     }
                 }, 1500); // 1.5 seconds of full visual artifacting sequence before browser engine locks up
             }
@@ -412,9 +412,9 @@
         }
         inventory.forEach((item, idx) => {
             if (item === "STRIKE") {
-                box.innerHTML += `<button class="i-btn i-strike" onclick="useItem('STRIKE', ${idx})">💥 Strike</button>`;
+                box.innerHTML += `<button class="i-btn i-strike" onclick="useItem('STRIKE', ${idx})">Strike</button>`;
             } else if (item === "BLOCK") {
-                box.innerHTML += `<button class="i-btn i-block" onclick="useItem('BLOCK', ${idx})">🛡️ Block</button>`;
+                box.innerHTML += `<button class="i-btn i-block" onclick="useItem('BLOCK', ${idx})">Block</button>`;
             }
         });
     }
@@ -425,7 +425,7 @@
             renderItems();
             writeTrace("Shipping shields active configuration header trace.");
             conn.send({ type: 'USE_BLOCK', name: myName });
-            alert("🛡️ Block active! Attacks on you this round will backfire.");
+            alert("Block active! Attacks on you this round will backfire.");
         } else if (type === "STRIKE") {
             let val = document.getElementById("target-select").value;
             if(!val) return alert("No valid interaction targets found on roster map!");
@@ -445,7 +445,7 @@
 
         writeTrace(`Deploying offensive action tracking package targeting identity trace: ${target}`);
         conn.send({ type: 'USE_STRIKE', name: myName, target: target });
-        alert(`💥 Strike launched at ${target}!`);
+        alert(`Strike launched at ${target}!`);
     }
 
     function selectChoice(btn) {
@@ -484,7 +484,7 @@
             let entry = document.getElementById("text-answer-input").value.trim().toLowerCase().replace(/[\s-]/g, '');
             let actual = correct.trim().toLowerCase().replace(/[\s-]/g, '');
             if (entry === actual) {
-                alert("Correct! 🎉 +150 Points!");
+                alert("Correct! +150 Points!");
             } else {
                 alert(`Incorrect. The proper term was: ${correct}`);
             }
