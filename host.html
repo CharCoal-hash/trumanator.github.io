@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projet de Vocab - Host (v3.1.0)</title>
+    <title>Projet de Vocab - Host (v3.1.1)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -43,7 +43,12 @@
             from { transform: translate3d(-3%, -2%, 0) scale(1); }
             to { transform: translate3d(3%, 2%, 0) scale(1.08); }
         }
-        .container { width: 100%; max-width: 900px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; position: relative; }
+        .container {
+            width: 100%; max-width: 900px; background: linear-gradient(145deg, rgba(30,41,59,0.86), rgba(15,23,42,0.76));
+            border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; position: relative;
+            box-shadow: 0 16px 36px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+            transform: perspective(1000px) rotateX(1deg);
+        }
         .v-tag { position: absolute; top: 15px; right: 20px; font-size: 0.8rem; font-family: monospace; color: #64748b; font-weight: bold; }
         h1 { margin: 0 0 10px 0; font-size: 2.5rem; }
         .subtitle { color: #94a3b8; margin-bottom: 30px; font-size: 1.1rem; }
@@ -52,7 +57,10 @@
         .qr-box { background: white; padding: 16px; border-radius: 16px; display: inline-block; min-width: 180px; min-height: 180px; }
         .code-tag { font-family: monospace; font-size: 1.3rem; font-weight: bold; color: #38bdf8; margin-top: 10px; display: block; }
         
-        .players-box { width: 350px; background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 20px; text-align: left; }
+        .players-box {
+            width: 350px; background: linear-gradient(145deg, rgba(0, 0, 0, 0.24), rgba(15, 23, 42, 0.16));
+            border-radius: 16px; padding: 20px; text-align: left; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+        }
         .players-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .player-card { background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; transition: background 0.2s; }
         .player-card:hover { background: rgba(255, 255, 255, 0.1); }
@@ -60,7 +68,8 @@
         /* WHEEL SYSTEM UI STYLES */
         .wheel-container {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.2); border-radius: 16px; padding: 20px; width: 350px; position: relative;
+            background: linear-gradient(145deg, rgba(0,0,0,0.24), rgba(15,23,42,0.16)); border-radius: 16px; padding: 20px; width: 350px; position: relative;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
         }
         .wheel-wrapper { position: relative; width: 260px; height: 260px; margin-bottom: 10px; }
         #wheel-canvas { width: 100%; height: 100%; border-radius: 50%; border: 4px solid rgba(255,255,255,0.2); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
@@ -73,9 +82,12 @@
             font-size: 1.4rem; font-weight: bold; min-height: 35px; color: #38bdf8; margin-top: 5px;
             display: flex; align-items: center; justify-content: center; letter-spacing: 0.05em; text-shadow: 0 0 8px rgba(56,189,248,0.4);
         }
-        .wheel-panel { background: rgba(139, 92, 246, 0.05); border: 1px dashed rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 20px; margin-top: 30px; text-align: center; width: 100%; }
+        .wheel-panel { background: linear-gradient(145deg, rgba(139, 92, 246, 0.12), rgba(88, 28, 135, 0.08)); border: 1px dashed rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 20px; margin-top: 30px; text-align: center; width: 100%; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
 
-        .btn { background: var(--green); color: white; border: none; padding: 14px 40px; font-size: 1.3rem; border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 20px; }
+        .btn {
+            background: linear-gradient(145deg, var(--green), #047857); color: white; border: none; padding: 14px 40px; font-size: 1.3rem;
+            border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 20px; box-shadow: 0 8px 16px rgba(16,185,129,0.22), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
         .btn-danger { background: var(--red); }
         .btn-purple { background: var(--purple); }
         .btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
@@ -110,7 +122,7 @@
         .modal-btns { display: flex; flex-direction: column; gap: 8px; }
         .m-btn { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-        .debug-console { width: 100%; max-width: 900px; background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 15px; text-align: left; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8); }
+        .debug-console { width: 100%; max-width: 900px; background: linear-gradient(145deg, #020617, #0f172a); border: 1px solid #1e293b; border-radius: 12px; padding: 15px; text-align: left; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 8px 18px rgba(0,0,0,0.25); }
         .debug-header { font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
         .debug-logs { font-family: monospace; font-size: 0.8rem; color: #38bdf8; max-height: 120px; overflow-y: auto; white-space: pre-wrap; line-height: 1.4; }
         .log-err { color: #f43f5e; }
@@ -120,7 +132,7 @@
 <body>
 
 <div class="container">
-    <div class="v-tag">HOST ENGINE v3.1.0</div>
+    <div class="v-tag">HOST ENGINE v3.1.1</div>
     
     <div id="view-lobby">
         <h1>Projet de Vocabulaire</h1>
