@@ -57,7 +57,6 @@
             <div id="hud-status" style="color:#fbbf24;">Lobby</div>
         </div>
 
-        <!-- REGISTER VIEW -->
         <div id="view-join">
             <h2>Join Game</h2>
             <input type="text" id="name-input" placeholder="Enter Nickname" maxlength="12">
@@ -65,17 +64,14 @@
             <p id="error-msg" style="color:#ef4444; margin-top:10px; font-size:0.9rem;"></p>
         </div>
 
-        <!-- INTERMISSION LOADING BANNER -->
         <div id="view-wait" class="hidden">
             <h3 id="wait-msg">Connected</h3>
             <div class="loader"></div>
         </div>
 
-        <!-- QUIZ SYSTEM ENGINE CONTAINER -->
         <div id="view-quiz" class="hidden">
             <h3 id="quiz-title" style="margin: 0 0 5px 0;">Select Answer</h3>
             
-            <!-- VARIANT A: MULTIPLE CHOICE BUTTONS -->
             <div class="choices" id="choices-box">
                 <button class="opt-btn" onclick="selectChoice(this)"></button>
                 <button class="opt-btn" onclick="selectChoice(this)"></button>
@@ -83,7 +79,6 @@
                 <button class="opt-btn" onclick="selectChoice(this)"></button>
             </div>
 
-            <!-- VARIANT B: FREE TEXT BOX ENTRY FIELD -->
             <div class="text-entry-container hidden" id="text-box-container">
                 <input type="text" id="text-answer-input" placeholder="Type answer in French..." autocomplete="off">
                 <button class="btn" onclick="submitTextAnswer()">Submit Answer</button>
@@ -98,21 +93,18 @@
                 <button class="btn" style="padding:8px; font-size:0.9rem; margin-top:8px; background:#ef4444;" onclick="fireStrike()">Confirm Strike</button>
             </div>
             
-            <!-- WAITING FOR HOST REVEAL INDICATOR -->
             <div id="quiz-waiting" class="hidden" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                 <div class="loader" style="width:24px; height:24px; margin:5px auto;"></div>
                 <span style="font-size:0.85rem; color:#94a3b8;">Answer locked. Waiting for host...</span>
             </div>
         </div>
 
-        <!-- GENERIC DISCONNECT DISPLAY -->
         <div id="view-alert" class="hidden">
             <h2 id="alert-title">Disconnected</h2>
             <p id="alert-desc">Lost connection to server.</p>
         </div>
     </div>
 
-    <!-- DIAGNOSTIC OUTPUT WINDOW -->
     <div class="debug-panel">
         <div class="debug-title">
             <span>Local Controller Trace Log</span>
@@ -145,6 +137,7 @@
         console.log(`[Controller] ${text}`);
     }
 
+    // Protection Engine Execution Pipeline
     window.onload = function() {
         const params = new URLSearchParams(window.location.search);
         hostRoomId = params.get('room');
