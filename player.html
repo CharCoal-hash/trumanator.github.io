@@ -3,11 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Controller (v2.5.0)</title>
+    <title>French Quiz - Controller (v3.0.1)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 15px; min-height: 100vh; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; }
+        body {
+            margin: 0; padding: 15px; min-height: 100vh;
+            color: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px;
+            background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
+            background-size: 400% 400%;
+            animation: rainbowShift 16s ease infinite;
+            position: relative; overflow: hidden;
+        }
+        body::before {
+            content: "";
+            position: fixed; inset: -20%;
+            background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.35), transparent 25%),
+                        radial-gradient(circle at 80% 0%, rgba(255,255,255,0.2), transparent 30%),
+                        radial-gradient(circle at 50% 100%, rgba(255,255,255,0.18), transparent 40%);
+            animation: drift 12s ease-in-out infinite alternate;
+            pointer-events: none; z-index: -1;
+        }
+        @keyframes rainbowShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes drift {
+            from { transform: translate3d(-3%, -2%, 0) scale(1); }
+            to { transform: translate3d(3%, 2%, 0) scale(1.08); }
+        }
         .wrapper { width: 100%; max-width: 400px; background: #1e293b; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; position: relative; }
         .v-tag { position: absolute; top: -12px; right: 15px; font-size: 0.7rem; font-family: monospace; color: #475569; font-weight: bold; }
         
@@ -54,7 +79,7 @@
 
 <div id="main-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
     <div class="wrapper">
-        <div class="v-tag">CONTROLLER v2.5.0</div>
+        <div class="v-tag">CONTROLLER v3.0.1</div>
         
         <div class="header">
             <div id="hud-user">Player</div>

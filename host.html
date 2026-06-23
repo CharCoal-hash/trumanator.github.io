@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projet de Vocab - Host (v2.6.0)</title>
+    <title>Projet de Vocab - Host (v3.0.1)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -19,7 +19,29 @@
         * { box-sizing: border-box; }
         body {
             font-family: system-ui, sans-serif; margin: 0; padding: 20px; min-height: 100vh; 
-            color: #f8fafc; background: var(--bg-dark); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;
+            color: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;
+            background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
+            background-size: 400% 400%;
+            animation: rainbowShift 16s ease infinite;
+            position: relative; overflow: hidden;
+        }
+        body::before {
+            content: "";
+            position: fixed; inset: -20%;
+            background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent 25%),
+                        radial-gradient(circle at 80% 0%, rgba(255,255,255,0.18), transparent 30%),
+                        radial-gradient(circle at 50% 100%, rgba(255,255,255,0.2), transparent 40%);
+            animation: drift 12s ease-in-out infinite alternate;
+            pointer-events: none; z-index: -1;
+        }
+        @keyframes rainbowShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes drift {
+            from { transform: translate3d(-3%, -2%, 0) scale(1); }
+            to { transform: translate3d(3%, 2%, 0) scale(1.08); }
         }
         .container { width: 100%; max-width: 900px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; position: relative; }
         .v-tag { position: absolute; top: 15px; right: 20px; font-size: 0.8rem; font-family: monospace; color: #64748b; font-weight: bold; }
@@ -98,7 +120,7 @@
 <body>
 
 <div class="container">
-    <div class="v-tag">HOST ENGINE v2.6.0</div>
+    <div class="v-tag">HOST ENGINE v3.0.1</div>
     
     <div id="view-lobby">
         <h1>Projet de Vocabulaire</h1>
