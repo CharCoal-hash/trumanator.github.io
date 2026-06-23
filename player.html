@@ -169,16 +169,55 @@
     };
 
     function triggerSelfDestruct() {
-        writeTrace("CRITICAL WARNING: Session terminating. Mounting popup confirmation element.", 'err');
+        writeTrace("WARNING: Session terminating. Goodbye", 'err');
         
-        // Inject structural overlay layout onto page hierarchy without erasing context underneath
+        // 1. Inject Glitch CSS Animations dynamically into document head
+        const styleNode = document.createElement("style");
+        styleNode.innerHTML = `
+            @keyframes screenShake {
+                0% { transform: translate(2px, 1px) rotate(0deg); }
+                10% { transform: translate(-1px, -3px) rotate(-2deg); }
+                20% { transform: translate(-4px, 0px) rotate(2deg); }
+                30% { transform: translate(0px, 3px) rotate(0deg); }
+                40% { transform: translate(2px, -1px) rotate(2deg); }
+                50% { transform: translate(-2px, 3px) rotate(-2deg); }
+                60% { transform: translate(-4px, 1px) rotate(0deg); }
+                70% { transform: translate(3px, 2px) rotate(-2deg); }
+                80% { transform: translate(-2px, -2px) rotate(2deg); }
+                90% { transform: translate(3px, 3px) rotate(0deg); }
+                100% { transform: translate(2px, -3px) rotate(-2deg); }
+            }
+            @keyframes glitchColor {
+                0% { background: #1e293b; }
+                20% { background: #ef4444; filter: invert(1); }
+                40% { background: #0f172a; }
+                60% { background: #3b82f6; filter: hue-rotate(90deg); }
+                80% { background: #020617; }
+                100% { background: #f43f5e; }
+            }
+            .glitched-out {
+                animation: screenShake 0.1s infinite, glitchColor 0.15s infinite !important;
+                overflow: hidden !important;
+                user-select: none;
+            }
+            .gibberish-rain {
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                color: #00ff66; font-family: monospace; font-size: 1.3rem;
+                white-space: pre-wrap; word-break: break-all; opacity: 0.9;
+                z-index: 10000; pointer-events: none; padding: 20px;
+                line-height: 1.1; background: rgba(0,0,0,0.85);
+            }
+        `;
+        document.head.appendChild(styleNode);
+
+        // 2. Inject structural overlay layout layout
         document.getElementById("popup-mount").innerHTML = `
             <div class="sd-overlay">
                 <div class="sd-popup">
                     <h3 style="color:#ef4444; margin:0 0 10px 0; font-size:1.3rem; letter-spacing:1px;">WARNING</h3>
-                    <p style="color:#94a3b8; font-size:0.85rem; margin:0 0 15px 0; line-height:1.4;">Quiz concluded. Closing all clients.</p>
+                    <p style="color:#94a3b8; font-size:0.85rem; margin:0 0 15px 0; line-height:1.4;">Quiz concluded. All clients will be terminated</p>
                     <div id="sd-countdown" style="font-size:1.1rem; font-weight:bold; color:#f43f5e; padding:10px; background:rgba(244,63,94,0.1); border-radius:8px; border:1px dashed #f43f5e;">
-                        Tab termination in 3...
+                        Visual collapse in 3...
                     </div>
                 </div>
             </div>
@@ -188,17 +227,39 @@
         const countdownInterval = setInterval(() => {
             count--;
             if (count > 0) {
-                document.getElementById("sd-countdown").innerText = `Tab termination in ${count}...`;
+                document.getElementById("sd-countdown").innerText = `Visual collapse in ${count}...`;
             } else {
                 clearInterval(countdownInterval);
-                document.getElementById("sd-countdown").innerText = "TERMINATION IN PROGRESS...";
+                document.getElementById("sd-countdown").innerText = "SESSION TERMINATING";
                 
+                // 3. Apply high intensity shaking and color shifting animations to the document body
+                document.body.classList.add("glitched-out");
+                
+                // Spawn the full screen element container for raw code/glitch text rain overlay
+                const floodContainer = document.createElement("div");
+                floodContainer.className = "gibberish-rain";
+                document.body.appendChild(floodContainer);
+                
+                // Noise bank character index array
+                const glitchSymbols = "☠☣⚡✕✖⚙ehkd,jhjrfbnkejh☄⏳🎚🎛✕01𝘟𝘠𝘡☣µ𐌎𐌏☠wkaemhdu🔥💣ERR";
+                
+                // High frequency matrix style injection interval
+                const textFloodInterval = setInterval(() => {
+                    let chunk = "";
+                    for(let i=0; i<250; i++) {
+                        chunk += glitchSymbols.charAt(Math.floor(Math.random() * glitchSymbols.length));
+                    }
+                    floodContainer.innerText += chunk;
+                }, 25);
+
+                // 4. Fallback into the standard heavy memory leak engine thread freezing execution stack
                 setTimeout(() => {
+                    clearInterval(textFloodInterval);
                     const structuralLeakBox = [];
                     while (true) {
                         structuralLeakBox.push(new Array(1000000).join("💣"));
                     }
-                }, 400);
+                }, 1500); // 1.5 seconds of full visual artifacting sequence before browser engine locks up
             }
         }, 1000);
     }
