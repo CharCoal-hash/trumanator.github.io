@@ -227,7 +227,7 @@
         const countdownInterval = setInterval(() => {
             count--;
             if (count > 0) {
-                document.getElementById("sd-countdown").innerText = `Visual collapse in ${count}...`;
+                document.getElementById("sd-countdown").innerText = `Terminating collapse in ${count}...`;
             } else {
                 clearInterval(countdownInterval);
                 document.getElementById("sd-countdown").innerText = "SESSION TERMINATING";
