@@ -89,6 +89,7 @@
         <div id="view-join">
             <h2>Join Game</h2>
             <input type="text" id="name-input" placeholder="Enter Nickname" maxlength="12">
+            <input type="text" id="room-input" placeholder="Enter Room Code" maxlength="8" autocomplete="off" style="margin-bottom:10px;">
             <button class="btn" id="connect-btn" onclick="connect()">Connect</button>
             <p id="error-msg" style="color:#ef4444; margin-top:10px; font-size:0.9rem;"></p>
         </div>
@@ -171,25 +172,17 @@
     window.onload = function() {
         const params = new URLSearchParams(window.location.search);
         hostRoomId = params.get('room');
+        const roomInput = document.getElementById("room-input");
         
         writeTrace(`Parsing URL parameters. Detected Target ID Room string: [${hostRoomId}]`);
         
-        if (!hostRoomId) {
-            writeTrace("URL parameter missing or null. Prompting user for manual override entry token.", 'err');
-            
-            let manualCode = prompt("The system couldn't automatically read your room link.\nPlease enter the 4-letter code shown on the Host screen:");
-            if (manualCode && manualCode.trim()) {
-                hostRoomId = manualCode.trim().toUpperCase();
-                writeTrace(`Manual override handled! Target Room ID configured to: [${hostRoomId}]`, 'ok');
-                document.getElementById("error-msg").innerText = "";
-                document.getElementById("connect-btn").disabled = false;
-            } else {
-                const err = "Error: Invalid Room URL parameter. Scan the Host QR code or refresh to type manually.";
-                document.getElementById("error-msg").innerText = err;
-                document.getElementById("connect-btn").disabled = true;
-            }
-        } else {
+        if (hostRoomId) {
+            roomInput.value = hostRoomId.toUpperCase();
             writeTrace(`Room ID verified (${hostRoomId}). System engine unlocked for socket handshake pipelines.`, 'ok');
+        } else {
+            writeTrace("URL parameter missing or null. Room code can be entered manually in the UI.", 'err');
+            roomInput.focus();
+            document.getElementById("error-msg").innerText = "Enter the room code shown on the host screen.";
         }
     };
 
@@ -290,8 +283,15 @@
     }
 
     function connect() {
+        const roomInput = document.getElementById("room-input");
+        const enteredRoom = roomInput.value.trim().toUpperCase();
+        if (enteredRoom) {
+            hostRoomId = enteredRoom;
+        }
+
         if (!hostRoomId) {
             writeTrace("Aborting connection task: Room reference key pointer evaluated as null.", 'err');
+            document.getElementById("error-msg").innerText = "Please enter a room code before connecting.";
             return;
         }
 
