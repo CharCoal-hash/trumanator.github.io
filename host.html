@@ -170,12 +170,42 @@
     }
     
     const questions = [
-        { f: "Un porte-bloc", e: "A clipboard", w: ["Une punaise", "Le jeu d’échecs", "Un taille-crayon"], type: "choice" },
-        { f: "Une punaise", e: "A thumbtack", w: ["Un porte-bloc", "Un classeur", "Une pince à dessin"], type: "choice" },
-        { f: "Le jeu d’échecs", e: "Chess", w: ["Un taille-crayon", "Un porte-bloc", "Un classeur"], type: "choice" },
-        { f: "Un taille-crayon", e: "A pencil sharpener", w: [], type: "text" }, 
-        { f: "Un classeur", e: "A binder", w: ["Un porte-bloc", "Un taille-crayon", "Une pince à dessin"], type: "choice" },
-        { f: "Une pince à dessin", e: "A binder clip", w: ["Une punaise", "Le jeu d’échecs", "Un classeur"], type: "choice" }
+        { 
+            f: "Un presse-papier", 
+            e: "A clipboard", 
+            w: ["Un presse-papiers", "Une planche à pince", "Un sous-main"], 
+            type: "choice" 
+        }, // Trap: Presse-papiers is paperweight; Planche à pince is a physical wooden board; Sous-main is a desk pad.
+        { 
+            f: "Une punaise", 
+            e: "A thumbtack", 
+            w: ["Un punais", "Un picot", "Une attache parisienne"], 
+            type: "choice" 
+        }, // Trap: "Punais" means stinky; Attache parisienne is a brass brad/fastener.
+        { 
+            f: "Le jeu d’échecs", 
+            e: "Chess", 
+            w: ["Le jeu d'échecs", "Le jeu d'échec", "Les échecs", "L'échiquier"], 
+            type: "choice" 
+        }, // Trap: "Échec" (singular) means failure. L'échiquier is only the physical board. 
+        { 
+            f: "Un taille-crayon", 
+            e: "A pencil sharpener", 
+            w: [], 
+            type: "text" 
+        }, // Text Trap: They HAVE to remember the hyphen, or they fail.
+        { 
+            f: "Un classeur", 
+            e: "A binder", 
+            w: ["Une classeuse", "Un chemise", "Une reliure à anneaux"], 
+            type: "choice" 
+        }, // Trap: "Classeuse" is a sorting machine/person. "Une chemise" is a folder. "Reliure à anneaux" is technically a ring-binder but "Classeur" is the expected default.
+        { 
+            f: "Une pince à dessin", 
+            e: "A binder clip", 
+            w: ["Une pince double", "Une pince à trombone", "Un trombone double"], 
+            type: "choice" 
+        } // Trap: Total chaos with administrative office slang vs technical drawing vocabulary.
     ];
 
     const roomCode = Math.random().toString(36).substring(2,6).toUpperCase();
