@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Dashboard (v3.4.0)</title>
+    <title>Quiz Dashboard (v3.4.1)</title>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -39,12 +39,13 @@
 </div>
 <script>
     const firebaseConfig = {
-        apiKey: 'YOUR_API_KEY',
-        authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-        projectId: 'YOUR_PROJECT_ID',
-        storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-        messagingSenderId: 'YOUR_SENDER_ID',
-        appId: 'YOUR_APP_ID'
+        apiKey: 'AIzaSyAUubLENrdSf73X4-oEAwS7uoLiQsAqEMs',
+        authDomain: 'quizapp-f7e02.firebaseapp.com',
+        projectId: 'quizapp-f7e02',
+        storageBucket: 'quizapp-f7e02.firebasestorage.app',
+        messagingSenderId: '173913988071',
+        appId: '1:173913988071:web:d8f11750d61ccd834e3b42',
+        measurementId: 'G-GESK9DQXT1'
     };
     const isFirebaseConfigured = Object.values(firebaseConfig).every(value => typeof value === 'string' && !value.startsWith('YOUR_'));
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
