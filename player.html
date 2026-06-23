@@ -215,9 +215,36 @@
         console.log(`[Controller] ${text}`);
     }
 
+    function extractRoomIdFromUrl() {
+        const url = new URL(window.location.href);
+        const candidates = [
+            url.searchParams.get('room'),
+            url.searchParams.get('roomCode'),
+            url.searchParams.get('code'),
+            url.searchParams.get('id')
+        ];
+
+        for (const candidate of candidates) {
+            if (candidate && candidate.trim()) {
+                return candidate.trim().toUpperCase();
+            }
+        }
+
+        const hashValue = url.hash.replace(/^#/, '').trim();
+        if (hashValue) {
+            return hashValue.toUpperCase();
+        }
+
+        const pathValue = url.pathname.split('/').filter(Boolean).pop();
+        if (pathValue && /^[A-Z0-9]{2,}$/i.test(pathValue)) {
+            return pathValue.toUpperCase();
+        }
+
+        return null;
+    }
+
     window.onload = function() {
-        const params = new URLSearchParams(window.location.search);
-        hostRoomId = params.get('room');
+        hostRoomId = extractRoomIdFromUrl();
         const roomInput = document.getElementById("room-input");
         
         writeTrace(`Parsing URL parameters. Detected Target ID Room string: [${hostRoomId}]`);

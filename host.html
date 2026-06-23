@@ -267,6 +267,14 @@
 <script>
     const PLAYER_PAGE_URL = "player.html";
 
+    function buildJoinUrl(roomId) {
+        const baseUrl = new URL(window.location.href);
+        const targetUrl = new URL(PLAYER_PAGE_URL, baseUrl);
+        targetUrl.searchParams.set('room', roomId);
+        targetUrl.hash = '';
+        return targetUrl.toString();
+    }
+
     function printLog(msg, status = '') {
         const box = document.getElementById("log-box");
         const ts = new Date().toTimeString().split(' ')[0];
@@ -350,11 +358,7 @@
         document.getElementById("room-code").innerText = "ROOM CODE: " + id;
         printLog(`Handshake accepted by PeerJS Broker Cloud server. Server ID tied: ${id}`, 'ok');
 
-        let targetURL = window.location.href.toLowerCase().includes("host.html") 
-            ? window.location.href.replace(/host\.html/i, PLAYER_PAGE_URL)
-            : window.location.href + PLAYER_PAGE_URL;
-            
-        targetURL += "?room=" + id;
+        const targetURL = buildJoinUrl(id);
         printLog(`Auto-generating player destination payload pointer: ${targetURL}`);
 
         document.getElementById("qrcode").innerHTML = "";
