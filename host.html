@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projet de Vocab - Host (v3.3.1)</title>
+    <title>Projet de Vocab - Host (v3.4.0)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -143,7 +143,7 @@
 <body>
 
 <div class="container">
-    <div class="v-tag">HOST ENGINE v3.3.1</div>
+    <div class="v-tag">HOST ENGINE v3.4.0</div>
     
     <div id="view-lobby">
         <h1>Projet de Vocabulaire</h1>
@@ -188,6 +188,11 @@
                 <button class="btn btn-purple" style="margin-top:0; padding:12px 22px; font-size:1rem;" onclick="resetToDefaultQuestions()">Use Built-in Quiz</button>
             </div>
             <div id="quiz-import-status" style="color:#fbbf24; margin-top:10px; font-size:0.95rem;">No custom quiz loaded.</div>
+        </div>
+
+        <div style="margin-top:16px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+            <a class="btn btn-purple" href="creator.html" target="_blank" style="margin-top:0; padding:12px 22px; font-size:1rem; text-decoration:none;">Open Creator</a>
+            <a class="btn" href="dashboard.html" target="_blank" style="margin-top:0; padding:12px 22px; font-size:1rem; text-decoration:none;">Open Dashboard</a>
         </div>
 
         <button id="start-btn" class="btn" style="display:none;" onclick="startGame()">Start Game</button>

@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Creator (v3.3.1)</title>
+    <title>Quiz Creator (v3.4.0)</title>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -43,6 +46,11 @@
         input[type="text"], select, textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: #020617; color: white; margin-bottom: 10px; }
         .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .auth-card { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(15,23,42,0.16)); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
+        .auth-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+        .user-chip { color: #cbd5e1; font-size: 0.95rem; }
+        .cloud-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .cloud-controls input { margin-bottom: 0; max-width: 280px; }
         .status { color: #fbbf24; font-size: 0.95rem; margin-top: 8px; }
         .hidden { display: none !important; }
         .mini { font-size: 0.85rem; color: #94a3b8; }
@@ -55,7 +63,7 @@
             <h1 style="margin:0 0 6px 0;">Quiz Blueprint Creator</h1>
             <p class="mini" style="margin:0;">Craft quiz questions with a familiar host-style interface, then export the JSON file for the host page.</p>
         </div>
-        <div class="v-tag">CREATOR v3.3.1</div>
+        <div class="v-tag">CREATOR v3.4.0</div>
     </div>
 
     <div class="toolbar">
@@ -64,6 +72,21 @@
         <button class="btn secondary" onclick="exportQuiz()">Export JSON</button>
         <button class="btn danger" onclick="resetQuestions()">Reset</button>
         <a class="btn secondary" href="host.html" target="_blank" style="padding-top:11px;">Open Host</a>
+        <a class="btn secondary" href="dashboard.html" style="padding-top:11px;">Open Dashboard</a>
+    </div>
+
+    <div class="auth-card">
+        <div class="auth-row">
+            <button id="sign-in-btn" class="btn secondary">Sign in with Google</button>
+            <button id="sign-out-btn" class="btn danger hidden">Sign out</button>
+            <span id="user-chip" class="user-chip">Not signed in</span>
+        </div>
+        <div class="cloud-controls">
+            <input id="quiz-title" type="text" placeholder="Quiz title" value="">
+            <button id="save-btn" class="btn">Save to Cloud</button>
+            <button id="save-new-btn" class="btn secondary">Save as New</button>
+        </div>
+        <div id="cloud-status" class="status">Sign in to save quizzes to the cloud.</div>
     </div>
 
     <input id="quiz-file-input" type="file" accept="application/json" class="hidden">
@@ -76,11 +99,71 @@
     const fileInput = document.getElementById('quiz-file-input');
     const questionList = document.getElementById('question-list');
     const status = document.getElementById('status');
+    const cloudStatus = document.getElementById('cloud-status');
+    const quizTitleInput = document.getElementById('quiz-title');
+    const signInBtn = document.getElementById('sign-in-btn');
+    const signOutBtn = document.getElementById('sign-out-btn');
+    const userChip = document.getElementById('user-chip');
+    const saveBtn = document.getElementById('save-btn');
+    const saveNewBtn = document.getElementById('save-new-btn');
+
+    const firebaseConfig = {
+        apiKey: 'YOUR_API_KEY',
+        authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+        projectId: 'YOUR_PROJECT_ID',
+        storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+        messagingSenderId: 'YOUR_SENDER_ID',
+        appId: 'YOUR_APP_ID'
+    };
+    const isFirebaseConfigured = Object.values(firebaseConfig).every(value => typeof value === 'string' && !value.startsWith('YOUR_'));
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
 
     let questions = [createBlankQuestion()];
+    let currentUser = null;
+    let currentQuizDocId = null;
 
     function createBlankQuestion() {
         return { f: '', e: '', w: ['', '', ''], type: 'choice' };
+    }
+
+    function normalizeQuestion(item) {
+        return {
+            f: String(item && item.f ? item.f : '').trim(),
+            e: String(item && item.e ? item.e : '').trim(),
+            w: Array.isArray(item && item.w) ? item.w.map(x => String(x || '').trim()).filter(Boolean) : [],
+            type: item && item.type === 'text' ? 'text' : 'choice'
+        };
+    }
+
+    function loadDraftFromSession() {
+        try {
+            const draft = sessionStorage.getItem('creatorDraft');
+            const title = sessionStorage.getItem('creatorTitle');
+            const docId = sessionStorage.getItem('creatorDocId');
+            if (draft) {
+                const parsed = JSON.parse(draft);
+                if (Array.isArray(parsed)) {
+                    questions = parsed.map(normalizeQuestion).filter(q => q.f || q.e);
+                    if (questions.length === 0) questions = [createBlankQuestion()];
+                }
+            }
+            if (title) {
+                quizTitleInput.value = title;
+            }
+            if (docId) {
+                currentQuizDocId = docId;
+            }
+        } catch (err) {
+            console.warn('Could not restore draft quiz', err);
+        }
     }
 
     function renderQuestions() {
@@ -172,11 +255,22 @@
 
     function resetQuestions() {
         questions = [createBlankQuestion()];
+        quizTitleInput.value = '';
+        currentQuizDocId = null;
         renderQuestions();
     }
 
     function escapeHtml(value) {
         return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');
+    }
+
+    function serializeQuestions() {
+        return questions.map(q => ({
+            f: (q.f || '').trim(),
+            e: (q.e || '').trim(),
+            w: Array.isArray(q.w) ? q.w.map(x => String(x || '').trim()).filter(Boolean) : [],
+            type: q.type === 'text' ? 'text' : 'choice'
+        })).filter(q => q.f || q.e);
     }
 
     function updateStatus() {
@@ -185,13 +279,7 @@
     }
 
     function exportQuiz() {
-        const payload = questions.map(q => ({
-            f: (q.f || '').trim(),
-            e: (q.e || '').trim(),
-            w: Array.isArray(q.w) ? q.w.map(x => String(x || '').trim()).filter(Boolean) : [],
-            type: q.type === 'text' ? 'text' : 'choice'
-        })).filter(q => q.f || q.e);
-
+        const payload = serializeQuestions();
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -204,6 +292,85 @@
         status.innerText = `Exported ${payload.length} question${payload.length === 1 ? '' : 's'} to quiz.json.`;
     }
 
+    function showCloudConfigMessage() {
+        cloudStatus.innerText = 'Connect this app to a real Firebase project to enable Google sign-in and cloud quiz saves.';
+    }
+
+    async function signInWithGoogle() {
+        if (!isFirebaseConfigured) {
+            showCloudConfigMessage();
+            return;
+        }
+        try {
+            await auth.signInWithPopup(googleProvider);
+            cloudStatus.innerText = 'Signed in. You can save quizzes to the cloud.';
+        } catch (err) {
+            cloudStatus.innerText = `Sign-in failed: ${err.message}`;
+        }
+    }
+
+    async function signOutUser() {
+        try {
+            await auth.signOut();
+            cloudStatus.innerText = 'Signed out.';
+        } catch (err) {
+            cloudStatus.innerText = `Sign-out failed: ${err.message}`;
+        }
+    }
+
+    function updateAuthUi(user) {
+        currentUser = user;
+        if (user) {
+            signInBtn.classList.add('hidden');
+            signOutBtn.classList.remove('hidden');
+            userChip.innerText = `Signed in as ${user.displayName || user.email || 'Google user'}`;
+            cloudStatus.innerText = 'Ready to save quizzes to the cloud.';
+        } else {
+            signInBtn.classList.remove('hidden');
+            signOutBtn.classList.add('hidden');
+            userChip.innerText = 'Not signed in';
+            cloudStatus.innerText = 'Sign in to save quizzes to the cloud.';
+        }
+    }
+
+    function persistDraft() {
+        sessionStorage.setItem('creatorDraft', JSON.stringify(serializeQuestions()));
+        sessionStorage.setItem('creatorTitle', quizTitleInput.value.trim());
+        if (currentQuizDocId) sessionStorage.setItem('creatorDocId', currentQuizDocId);
+    }
+
+    async function saveQuizToCloud(forceNew = false) {
+        if (!isFirebaseConfigured) {
+            showCloudConfigMessage();
+            return;
+        }
+        if (!currentUser) {
+            cloudStatus.innerText = 'Please sign in with Google before saving to the cloud.';
+            return;
+        }
+
+        const title = (quizTitleInput.value || 'Untitled quiz').trim() || 'Untitled quiz';
+        const payload = serializeQuestions();
+        const quizRef = forceNew || !currentQuizDocId
+            ? db.collection('users').doc(currentUser.uid).collection('quizzes').doc()
+            : db.collection('users').doc(currentUser.uid).collection('quizzes').doc(currentQuizDocId);
+
+        if (!forceNew && !currentQuizDocId) {
+            currentQuizDocId = quizRef.id;
+        }
+
+        await quizRef.set({
+            title,
+            questions: payload,
+            updatedAt: new Date().toISOString(),
+            createdAt: currentQuizDocId === quizRef.id && !forceNew ? new Date().toISOString() : undefined
+        }, { merge: true });
+
+        currentQuizDocId = quizRef.id;
+        persistDraft();
+        cloudStatus.innerText = `Saved “${title}” to the cloud.`;
+    }
+
     fileInput.addEventListener('change', async () => {
         const file = fileInput.files && fileInput.files[0];
         if (!file) return;
@@ -211,12 +378,7 @@
             const text = await file.text();
             const parsed = JSON.parse(text);
             if (!Array.isArray(parsed)) throw new Error('The file must contain an array of questions.');
-            questions = parsed.map((item, idx) => ({
-                f: String(item.f || '').trim(),
-                e: String(item.e || '').trim(),
-                w: Array.isArray(item.w) ? item.w.map(x => String(x || '').trim()).filter(Boolean) : [],
-                type: item.type === 'text' ? 'text' : 'choice'
-            })).filter(q => q.f || q.e);
+            questions = parsed.map(normalizeQuestion).filter(q => q.f || q.e);
             if (questions.length === 0) questions = [createBlankQuestion()];
             renderQuestions();
             status.innerText = `Imported ${questions.length} question${questions.length === 1 ? '' : 's'} from ${file.name}.`;
@@ -225,7 +387,19 @@
         }
     });
 
-    document.querySelector('.btn.secondary').addEventListener('click', () => fileInput.click());
+    signInBtn.addEventListener('click', signInWithGoogle);
+    signOutBtn.addEventListener('click', signOutUser);
+    saveBtn.addEventListener('click', () => saveQuizToCloud(false));
+    saveNewBtn.addEventListener('click', () => saveQuizToCloud(true));
+    [quizTitleInput].forEach(el => el.addEventListener('input', persistDraft));
+    document.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('input', () => {
+            persistDraft();
+        });
+    });
+
+    auth.onAuthStateChanged(updateAuthUi);
+    loadDraftFromSession();
     renderQuestions();
 </script>
 </body>
