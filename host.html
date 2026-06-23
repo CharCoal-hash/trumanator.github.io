@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projet de Vocab - Host (v3.2.0)</title>
+    <title>Projet de Vocab - Host (v3.3.0)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -92,7 +92,7 @@
             display: flex; align-items: center; justify-content: center; letter-spacing: 0.05em; text-shadow: 0 0 8px rgba(56,189,248,0.4);
         }
         .wheel-panel { background: linear-gradient(145deg, rgba(139, 92, 246, 0.12), rgba(88, 28, 135, 0.08)); border: 1px dashed rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 20px; margin-top: 30px; text-align: center; width: 100%; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); transform: translateZ(8px); }
-
+        .import-panel { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(15,23,42,0.14)); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-top: 16px; text-align: center; width: 100%; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
         .btn {
             background: linear-gradient(145deg, var(--green), #047857); color: white; border: none; padding: 14px 40px; font-size: 1.3rem;
             border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 20px; box-shadow: 0 10px 18px rgba(16,185,129,0.22), inset 0 1px 0 rgba(255,255,255,0.2);
@@ -143,7 +143,7 @@
 <body>
 
 <div class="container">
-    <div class="v-tag">HOST ENGINE v3.2.0</div>
+    <div class="v-tag">HOST ENGINE v3.3.0</div>
     
     <div id="view-lobby">
         <h1>Projet de Vocabulaire</h1>
@@ -178,7 +178,18 @@
                 Spin Selector Wheel
             </button>
         </div>
-        
+
+        <div class="import-panel">
+            <h3 style="color: #38bdf8; margin: 0 0 6px 0;">Quiz Import</h3>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin: 0 0 12px 0;">Import a quiz JSON exported from the creator page, or revert to the built-in starter set.</p>
+            <input type="file" id="quiz-import-input" accept="application/json" style="display:none;">
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button class="btn" style="margin-top:0; padding:12px 22px; font-size:1rem;" onclick="document.getElementById('quiz-import-input').click()">Import Quiz JSON</button>
+                <button class="btn btn-purple" style="margin-top:0; padding:12px 22px; font-size:1rem;" onclick="resetToDefaultQuestions()">Use Built-in Quiz</button>
+            </div>
+            <div id="quiz-import-status" style="color:#fbbf24; margin-top:10px; font-size:0.95rem;">No custom quiz loaded.</div>
+        </div>
+
         <button id="start-btn" class="btn" style="display:none;" onclick="startGame()">Start Game</button>
     </div>
 
@@ -267,7 +278,7 @@
         console.log(`[Diagnostic] ${msg}`);
     }
     
-    const questions = [
+    const defaultQuestions = [
         { f: "Un presse-papier", e: "A clipboard", w: ["Un presse-papiers", "Une planche à pince", "Un sous-main"], type: "choice" },
         { f: "Une punaise", e: "A thumbtack", w: ["Un punais", "Un picot", "Une attache parisienne"], type: "choice" },
         { f: "Le jeu d’échecs", e: "Chess", w: ["Le jeu d'échec", "Les échecs", "L'échiquier"], type: "choice" },
@@ -275,6 +286,48 @@
         { f: "Un classeur", e: "A binder", w: ["Une classeuse", "Un chemise", "Une reliure à anneaux"], type: "choice" },
         { f: "Une pince à trombone", e: "A binder clip", w: ["Une pince double", "Une pince à dessin", "Un trombone double"], type: "choice" }
     ];
+
+    function normalizeQuestions(rawQuestions) {
+        if (!Array.isArray(rawQuestions)) return defaultQuestions.map(q => ({ ...q, w: Array.isArray(q.w) ? q.w.slice(0, 3) : [] }));
+        return rawQuestions.map(q => ({
+            f: String(q.f || '').trim(),
+            e: String(q.e || '').trim(),
+            w: Array.isArray(q.w) ? q.w.map(x => String(x || '').trim()).filter(Boolean) : [],
+            type: q.type === 'text' ? 'text' : 'choice'
+        })).filter(q => q.f || q.e);
+    }
+
+    let questions = normalizeQuestions(defaultQuestions);
+
+    function resetToDefaultQuestions() {
+        questions = normalizeQuestions(defaultQuestions);
+        qIdx = 0;
+        document.getElementById('quiz-import-status').innerText = 'Reverted to the built-in starter quiz.';
+        printLog('Quiz set restored to the built-in starter set.', 'ok');
+    }
+
+    async function importQuizFromFile(file) {
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+            questions = normalizeQuestions(parsed);
+            qIdx = 0;
+            if (questions.length === 0) {
+                questions = normalizeQuestions(defaultQuestions);
+            }
+            document.getElementById('quiz-import-status').innerText = `Imported ${questions.length} question${questions.length === 1 ? '' : 's'} from ${file.name}.`;
+            printLog(`Imported quiz data from ${file.name}.`, 'ok');
+        } catch (err) {
+            document.getElementById('quiz-import-status').innerText = `Import failed: ${err.message}`;
+            printLog(`Quiz import failed: ${err.message}`, 'err');
+        }
+    }
+
+    document.getElementById('quiz-import-input').addEventListener('change', (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (file) importQuizFromFile(file);
+    });
 
     const roomCode = Math.random().toString(36).substring(2,6).toUpperCase();
     let scores = {}, peerIds = {}, connections = {}, banned = new Set();
@@ -296,7 +349,7 @@
     peer.on('open', (id) => {
         document.getElementById("room-code").innerText = "ROOM CODE: " + id;
         printLog(`Handshake accepted by PeerJS Broker Cloud server. Server ID tied: ${id}`, 'ok');
-        
+
         let targetURL = window.location.href.toLowerCase().includes("host.html") 
             ? window.location.href.replace(/host\.html/i, PLAYER_PAGE_URL)
             : window.location.href + PLAYER_PAGE_URL;

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Creator (v3.3.0)</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel: rgba(30, 41, 59, 0.82);
+            --border: rgba(255, 255, 255, 0.12);
+            --green: #10b981;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --red: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; font-family: system-ui, sans-serif; color: #f8fafc;
+            background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
+            background-size: 400% 400%; animation: rainbowShift 16s ease infinite; padding: 20px;
+        }
+        body::before {
+            content: ""; position: fixed; inset: -20%; background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent 25%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.2), transparent 30%); pointer-events: none; z-index: -1; animation: drift 11s ease-in-out infinite alternate;
+        }
+        @keyframes rainbowShift { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+        @keyframes drift { from{transform:translate3d(-3%, -2%, 0) scale(1);} to{transform:translate3d(3%, 2%, 0) scale(1.06);} }
+        .container {
+            max-width: 980px; margin: 0 auto; background: linear-gradient(145deg, rgba(30,41,59,0.9), rgba(15,23,42,0.82));
+            border: 1px solid var(--border); border-radius: 24px; padding: 30px; box-shadow: 0 20px 45px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09);
+            transform: perspective(1400px) rotateX(2deg) rotateY(-2deg);
+        }
+        .header { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .v-tag { font-size: 0.8rem; font-family: monospace; color: #64748b; font-weight: bold; }
+        .btn {
+            border: none; border-radius: 12px; padding: 12px 18px; color: white; font-weight: bold; cursor: pointer; background: linear-gradient(145deg, var(--green), #047857); box-shadow: 0 8px 18px rgba(16,185,129,0.22); text-decoration: none; display: inline-block;
+        }
+        .btn.secondary { background: linear-gradient(145deg, var(--blue), #2563eb); }
+        .btn.danger { background: linear-gradient(145deg, var(--red), #b91c1c); }
+        .card { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(15,23,42,0.16)); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
+        .question-grid { display: grid; gap: 14px; }
+        label { display: block; font-size: 0.9rem; margin-bottom: 5px; color: #cbd5e1; }
+        input[type="text"], select, textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: #020617; color: white; margin-bottom: 10px; }
+        .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .status { color: #fbbf24; font-size: 0.95rem; margin-top: 8px; }
+        .hidden { display: none !important; }
+        .mini { font-size: 0.85rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1 style="margin:0 0 6px 0;">Quiz Blueprint Creator</h1>
+            <p class="mini" style="margin:0;">Craft quiz questions with a familiar host-style interface, then export the JSON file for the host page.</p>
+        </div>
+        <div class="v-tag">CREATOR v3.3.0</div>
+    </div>
+
+    <div class="toolbar">
+        <button class="btn" onclick="addQuestion()">Add Question</button>
+        <button class="btn secondary" onclick="fileInput.click()">Import JSON</button>
+        <button class="btn secondary" onclick="exportQuiz()">Export JSON</button>
+        <button class="btn danger" onclick="resetQuestions()">Reset</button>
+        <a class="btn secondary" href="host.html" target="_blank" style="padding-top:11px;">Open Host</a>
+    </div>
+
+    <input id="quiz-file-input" type="file" accept="application/json" class="hidden">
+    <div id="status" class="status">Ready to build a new quiz.</div>
+
+    <div id="question-list" class="question-grid"></div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('quiz-file-input');
+    const questionList = document.getElementById('question-list');
+    const status = document.getElementById('status');
+
+    let questions = [createBlankQuestion()];
+
+    function createBlankQuestion() {
+        return { f: '', e: '', w: ['', '', ''], type: 'choice' };
+    }
+
+    function renderQuestions() {
+        questionList.innerHTML = '';
+        if (questions.length === 0) {
+            questions = [createBlankQuestion()];
+        }
+        questions.forEach((q, index) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <h3 style="margin:0;">Question ${index + 1}</h3>
+                    <button class="btn danger" onclick="removeQuestion(${index})" style="padding:8px 12px;">Remove</button>
+                </div>
+                <label>Correct answer / French term</label>
+                <input type="text" data-field="answer" data-index="${index}" value="${escapeHtml(q.f || '')}">
+                <label>English prompt</label>
+                <input type="text" data-field="e" data-index="${index}" value="${escapeHtml(q.e || '')}">
+                <label>Question type</label>
+                <select data-field="type" data-index="${index}">
+                    <option value="choice" ${q.type === 'choice' ? 'selected' : ''}>Multiple choice</option>
+                    <option value="text" ${q.type === 'text' ? 'selected' : ''}>Text answer</option>
+                </select>
+                <div class="choice-fields ${q.type === 'text' ? 'hidden' : ''}">
+                    <label>Wrong option 1</label>
+                    <input type="text" data-choice="w1" data-index="${index}" value="${escapeHtml((q.w && q.w[0]) || '')}">
+                    <label>Wrong option 2</label>
+                    <input type="text" data-choice="w2" data-index="${index}" value="${escapeHtml((q.w && q.w[1]) || '')}">
+                    <label>Wrong option 3</label>
+                    <input type="text" data-choice="w3" data-index="${index}" value="${escapeHtml((q.w && q.w[2]) || '')}">
+                </div>
+            `;
+            questionList.appendChild(card);
+        });
+        attachEvents();
+        updateStatus();
+    }
+
+    function attachEvents() {
+        questionList.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('input', handleFieldChange);
+            el.addEventListener('change', handleFieldChange);
+        });
+    }
+
+    function handleFieldChange(event) {
+        const index = Number(event.target.dataset.index);
+        const field = event.target.dataset.field;
+        const choice = event.target.dataset.choice;
+        const q = questions[index];
+        if (!q) return;
+
+        if (field === 'answer') q.f = event.target.value;
+        else if (field === 'e') q.e = event.target.value;
+        else if (field === 'type') {
+            q.type = event.target.value;
+            if (q.type === 'text') {
+                q.w = [];
+            } else {
+                q.w = q.w || ['', '', ''];
+            }
+            renderQuestions();
+            return;
+        } else if (choice) {
+            const arr = Array.isArray(q.w) ? [...q.w] : ['', '', ''];
+            if (choice === 'w1') {
+                arr[0] = event.target.value;
+            } else if (choice === 'w2') {
+                arr[1] = event.target.value;
+            } else if (choice === 'w3') {
+                arr[2] = event.target.value;
+            }
+            q.w = [arr[0] || '', arr[1] || '', arr[2] || ''];
+        }
+        updateStatus();
+    }
+
+    function addQuestion() {
+        questions.push(createBlankQuestion());
+        renderQuestions();
+    }
+
+    function removeQuestion(index) {
+        questions.splice(index, 1);
+        if (questions.length === 0) questions.push(createBlankQuestion());
+        renderQuestions();
+    }
+
+    function resetQuestions() {
+        questions = [createBlankQuestion()];
+        renderQuestions();
+    }
+
+    function escapeHtml(value) {
+        return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');
+    }
+
+    function updateStatus() {
+        const filled = questions.filter(q => (q.f || '').trim() && (q.e || '').trim()).length;
+        status.innerText = `Ready to export ${questions.length} question${questions.length === 1 ? '' : 's'}${filled ? ` (${filled} filled)` : ''}.`;
+    }
+
+    function exportQuiz() {
+        const payload = questions.map(q => ({
+            f: (q.f || '').trim(),
+            e: (q.e || '').trim(),
+            w: Array.isArray(q.w) ? q.w.map(x => String(x || '').trim()).filter(Boolean) : [],
+            type: q.type === 'text' ? 'text' : 'choice'
+        })).filter(q => q.f || q.e);
+
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'quiz.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        status.innerText = `Exported ${payload.length} question${payload.length === 1 ? '' : 's'} to quiz.json.`;
+    }
+
+    fileInput.addEventListener('change', async () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+            if (!Array.isArray(parsed)) throw new Error('The file must contain an array of questions.');
+            questions = parsed.map((item, idx) => ({
+                f: String(item.f || '').trim(),
+                e: String(item.e || '').trim(),
+                w: Array.isArray(item.w) ? item.w.map(x => String(x || '').trim()).filter(Boolean) : [],
+                type: item.type === 'text' ? 'text' : 'choice'
+            })).filter(q => q.f || q.e);
+            if (questions.length === 0) questions = [createBlankQuestion()];
+            renderQuestions();
+            status.innerText = `Imported ${questions.length} question${questions.length === 1 ? '' : 's'} from ${file.name}.`;
+        } catch (err) {
+            status.innerText = `Import failed: ${err.message}`;
+        }
+    });
+
+    document.querySelector('.btn.secondary').addEventListener('click', () => fileInput.click());
+    renderQuestions();
+</script>
+</body>
+</html>
