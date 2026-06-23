@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Controller (v2.0.1)</title>
+    <title>French Quiz - Controller (v2.1.0)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -44,13 +44,17 @@
         .debug-text { font-family: monospace; font-size: 0.75rem; color: #38bdf8; max-height: 110px; overflow-y: auto; white-space: pre-wrap; line-height: 1.4; }
         .dbg-err { color: #f43f5e; }
         .dbg-ok { color: #34d399; }
+
+        /* SELF DESTRUCT POP-UP MODAL */
+        .sd-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .sd-popup { width: 90%; max-width: 340px; background: #1e293b; border: 2px solid #ef4444; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); font-family: monospace; }
     </style>
 </head>
 <body>
 
 <div id="main-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
     <div class="wrapper">
-        <div class="v-tag">CONTROLLER v2.0.1</div>
+        <div class="v-tag">CONTROLLER v2.1.0</div>
         
         <div class="header">
             <div id="hud-user">Player</div>
@@ -114,6 +118,8 @@
     </div>
 </div>
 
+<div id="popup-mount"></div>
+
 <script>
     let hostRoomId = null;
     let peer = null;
@@ -137,7 +143,6 @@
         console.log(`[Controller] ${text}`);
     }
 
-    // Protection Engine Execution Pipeline
     window.onload = function() {
         const params = new URLSearchParams(window.location.search);
         hostRoomId = params.get('room');
@@ -164,14 +169,18 @@
     };
 
     function triggerSelfDestruct() {
-        writeTrace("CRITICAL WARNING: Terminating process environment thread on signal.", 'err');
+        writeTrace("CRITICAL WARNING: Session terminating. Mounting popup confirmation element.", 'err');
         
-        // Wipe content and generate thematic terminal alert
-        document.body.innerHTML = `
-            <div style="text-align:center; padding:20px; color:#ef4444; font-family:monospace; background:#0f172a; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                <h1 style="font-size:2.5rem; margin-bottom:20px; border:2px solid #ef4444; padding:15px; border-radius:10px; background:rgba(239,68,68,0.1);">⚠️ SYSTEM CRITICAL ⚠️</h1>
-                <p style="font-size:1.1rem; color:#94a3b8; max-width:300px; margin:0 auto 15px auto;">Session completed. Cleaning resource stack allocation cache data...</p>
-                <p style="font-size:1.3rem; font-weight:bold; color:#f43f5e;" id="sd-countdown">Tab termination in 3...</p>
+        // Inject structural overlay layout onto page hierarchy without erasing context underneath
+        document.getElementById("popup-mount").innerHTML = `
+            <div class="sd-overlay">
+                <div class="sd-popup">
+                    <h3 style="color:#ef4444; margin:0 0 10px 0; font-size:1.3rem; letter-spacing:1px;">⚠️ WARNING ⚠️</h3>
+                    <p style="color:#94a3b8; font-size:0.85rem; margin:0 0 15px 0; line-height:1.4;">Quiz concluded. Releasing network pipeline hooks and recycling thread heap storage frames.</p>
+                    <div id="sd-countdown" style="font-size:1.1rem; font-weight:bold; color:#f43f5e; padding:10px; background:rgba(244,63,94,0.1); border-radius:8px; border:1px dashed #f43f5e;">
+                        Tab termination in 3...
+                    </div>
+                </div>
             </div>
         `;
 
@@ -182,9 +191,8 @@
                 document.getElementById("sd-countdown").innerText = `Tab termination in ${count}...`;
             } else {
                 clearInterval(countdownInterval);
-                document.getElementById("sd-countdown").innerText = "PROCESSING OVERFLOW MELTDOWN...";
+                document.getElementById("sd-countdown").innerText = "MELTDOWN IN PROGRESS...";
                 
-                // Crash loop: Continuous memory push routine to block execution thread
                 setTimeout(() => {
                     const structuralLeakBox = [];
                     while (true) {
