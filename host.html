@@ -137,7 +137,7 @@
         <div class="termination-panel">
             <h3 style="color: var(--red); margin-bottom: 5px;">Session Termination Controls</h3>
             <p style="color: #94a3b8; font-size: 0.9rem; margin: 0 0 15px 0;">
-                Clicking the button below broadcasts the game over signal. All client controllers will experience a visual 3-second modal countdown before their browser tabs crash.
+                Clicking the button below broadcasts the game over signal. All client controllers will have their tabs closed.
             </p>
             <button class="btn btn-danger" style="margin-top: 0; padding: 12px 30px; font-size: 1.1rem;" onclick="broadcastGameOver()">
                 End Game Session & Terminate Clients
@@ -584,7 +584,7 @@
             return alert("Operation cancelled: No players are currently connected to this session.");
         }
         
-        if (confirm("CRITICAL ENFORCEMENT ACTION:\nThis will broadcast a GAME_OVER sequence packet. Connected player devices will display a 3-second countdown pop-up before their browser tabs crash.\n\nAre you sure you want to proceed?")) {
+        if (confirm("This will broadcast a GAME_OVER sequence packet. Connected player devices will display a 3-second countdown pop-up before their browser tabs close.\n\nAre you sure you want to proceed?")) {
             printLog("!!! BROADCASTING GAME_OVER PAYLOAD CHANNELS TO ALL PLAYERS !!!", 'err');
             clientKeys.forEach(k => {
                 if (connections[k]) {
