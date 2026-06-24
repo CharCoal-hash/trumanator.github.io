@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Dashboard (v3.4.1)</title>
+    <title>Quiz Dashboard (v3.4.2)</title>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -72,6 +72,7 @@
                     <div>
                         <strong>${item.title || 'Untitled quiz'}</strong>
                         <div class="muted">${item.questions ? item.questions.length : 0} questions</div>
+                        <div class="muted">Saved by ${item.ownerName || 'a user'}</div>
                     </div>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
                         <button class="btn secondary" onclick="downloadQuiz('${item.id}')">Download</button>
@@ -106,7 +107,14 @@
             status.innerText = 'Connect this app to a real Firebase project to enable Google sign-in.';
             return;
         }
-        try { await auth.signInWithPopup(googleProvider); } catch (err) { status.innerText = `Sign-in failed: ${err.message}`; }
+        try { await auth.signInWithPopup(googleProvider); } catch (err) {
+            const message = err && err.message ? err.message : String(err);
+            if (message.includes('authorized for OAuth operations')) {
+                status.innerText = 'Firebase blocked the sign-in because this domain is not authorized. Add this site to Authentication → Settings → Authorized domains in Firebase, then try again.';
+            } else {
+                status.innerText = `Sign-in failed: ${message}`;
+            }
+        }
     }
     async function signOut() { try { await auth.signOut(); } catch (err) { status.innerText = `Sign-out failed: ${err.message}`; } }
 
