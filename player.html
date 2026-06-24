@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Quiz - Controller (v3.4.2)</title>
+    <title>French Quiz - Controller (v4.0.0)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
         body {
-            margin: 0; padding: 15px; min-height: 100vh;
-            color: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px;
-            background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
+            margin: 0; padding: 0; min-height: 100vh;
+            color: #f8fafc; background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
             background-size: 400% 400%;
             animation: rainbowShift 16s ease infinite;
             position: relative; overflow: hidden;
@@ -33,6 +32,16 @@
             from { transform: translate3d(-3%, -2%, 0) scale(1); }
             to { transform: translate3d(3%, 2%, 0) scale(1.08); }
         }
+        .app-shell { display: flex; min-height: 100vh; }
+        .app-sidebar {
+            width: 220px; background: rgba(2, 6, 23, 0.92); border-right: 1px solid rgba(255,255,255,0.08); padding: 24px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 8px 0 24px rgba(0,0,0,0.24);
+        }
+        .app-sidebar .brand { font-size: 1rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #38bdf8; margin-bottom: 16px; }
+        .nav-link {
+            display: block; padding: 10px 12px; border-radius: 10px; color: #e2e8f0; text-decoration: none; font-weight: 600; background: rgba(255,255,255,0.04); border: 1px solid transparent; transition: all 0.2s ease;
+        }
+        .nav-link:hover, .nav-link.active { background: rgba(56,189,248,0.16); border-color: rgba(56,189,248,0.32); color: white; }
+        .page-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
         .wrapper {
             width: 100%; max-width: 400px; background: linear-gradient(145deg, #243244, #18212f);
             border-radius: 20px; padding: 20px; box-shadow: 0 18px 40px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.12);
@@ -87,6 +96,8 @@
             padding: 15px; border-radius: 12px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
             transform: translateZ(6px);
         }
+        .question-media { margin: 10px 0 14px; display: flex; justify-content: center; }
+        .question-media img { max-width: 100%; max-height: 220px; border-radius: 12px; object-fit: cover; box-shadow: 0 10px 24px rgba(0,0,0,0.22); }
 
         .item-row { display: flex; gap: 10px; margin-top: 15px; min-height: 45px; justify-content: center; }
         .i-btn { padding: 10px 16px; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; }
@@ -122,10 +133,25 @@
     </style>
 </head>
 <body>
-
-<div id="main-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
-    <div class="wrapper">
-        <div class="v-tag">CONTROLLER v3.4.2</div>
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <div class="brand">Quiz Hub</div>
+        <div class="sidebar-profile" id="sidebar-profile" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); margin-bottom:6px;">
+            <img id="sidebar-profile-img" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="profile" style="width:42px; height:42px; border-radius:50%; object-fit:cover; background:#020617;">
+            <div style="min-width:0;">
+                <div id="sidebar-profile-name" style="font-size:0.95rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Guest</div>
+                <div id="sidebar-profile-sub" style="font-size:0.78rem; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">No account linked</div>
+            </div>
+        </div>
+        <a class="nav-link" href="host.html">Host</a>
+        <a class="nav-link active" href="player.html">Player</a>
+        <a class="nav-link" href="creator.html">Creator</a>
+        <a class="nav-link" href="dashboard.html">Dashboard</a>
+    </aside>
+    <div class="page-content">
+        <div id="main-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div class="wrapper">
+        <div class="v-tag">CONTROLLER v4.0.0</div>
         
         <div class="header">
             <div id="hud-user">Player</div>
@@ -152,6 +178,7 @@
 
         <div id="view-quiz" class="hidden">
             <h3 id="quiz-title" style="margin: 0 0 5px 0;">Select Answer</h3>
+            <div class="question-media hidden" id="question-media"></div>
             
             <div class="choices" id="choices-box">
                 <button class="opt-btn" onclick="selectChoice(this)"></button>
@@ -193,6 +220,9 @@
         </div>
         <div class="debug-text" id="dbg-box">Awaiting connection initialization sequences...</div>
     </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="popup-mount"></div>
@@ -218,6 +248,27 @@
         pane.innerHTML += `\n<span ${styled}>[${ts}] ${text}</span>`;
         pane.scrollTop = pane.scrollHeight;
         console.log(`[Controller] ${text}`);
+    }
+
+    function getStoredProfile() {
+        try {
+            const raw = localStorage.getItem('quizAppProfile');
+            return raw ? JSON.parse(raw) : null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function updateSidebarProfile() {
+        const profile = getStoredProfile() || {};
+        const name = profile.displayName || 'Guest';
+        const avatar = profile.avatarUrl || profile.photoUrl || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+        const sideName = document.getElementById('sidebar-profile-name');
+        const sideImg = document.getElementById('sidebar-profile-img');
+        const sideSub = document.getElementById('sidebar-profile-sub');
+        if (sideName) sideName.innerText = name;
+        if (sideImg) sideImg.src = avatar;
+        if (sideSub) sideSub.innerText = profile.uid ? 'Signed in' : 'No account linked';
     }
 
     function extractRoomIdFromUrl() {
@@ -249,6 +300,7 @@
     }
 
     window.onload = function() {
+        updateSidebarProfile();
         hostRoomId = extractRoomIdFromUrl();
         const roomInput = document.getElementById("room-input");
         
@@ -394,7 +446,7 @@
             
             conn.on('open', () => { 
                 writeTrace("Remote channel sync pipeline verification completed. Pushing user identification data packets.", 'ok');
-                conn.send({ type: 'JOIN', name: myName }); 
+                conn.send({ type: 'JOIN', name: myName, profile: getStoredProfile() }); 
             });
 
             conn.on('data', (msg) => {
@@ -427,7 +479,7 @@
                         inventory.push(msg.item);
                         writeTrace(`Inventory array inventory push trace: +[${msg.item}]`);
                     }
-                    displayQuestion(msg.qMode, msg.options, msg.targets);
+                    displayQuestion(msg.qMode, msg.options, msg.targets, msg.imageUrl || '');
                 }
                 if (msg.type === 'REVEAL') {
                     displayReveal(msg.correct);
@@ -460,7 +512,7 @@
         document.getElementById("view-wait").classList.remove("hidden");
     }
 
-    function displayQuestion(qMode, options, targets) {
+    function displayQuestion(qMode, options, targets, imageUrl) {
         alive = true;
         activeChoiceBtn = null;
         currentMode = qMode || "choice";
@@ -473,6 +525,14 @@
         document.getElementById("view-quiz").classList.remove("hidden");
         document.getElementById("strike-panel").classList.add("hidden");
         document.getElementById("quiz-waiting").classList.add("hidden");
+        const mediaBox = document.getElementById("question-media");
+        if (imageUrl) {
+            mediaBox.innerHTML = `<img src="${imageUrl}" alt="Question visual">`;
+            mediaBox.classList.remove("hidden");
+        } else {
+            mediaBox.innerHTML = "";
+            mediaBox.classList.add("hidden");
+        }
         
         if (currentMode === "text") {
             document.getElementById("quiz-title").innerText = "Type the Translation";

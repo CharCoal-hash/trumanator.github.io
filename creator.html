@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Creator (v3.4.2)</title>
+    <title>Quiz Creator (v4.0.0)</title>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -21,15 +22,25 @@
         body {
             margin: 0; min-height: 100vh; font-family: system-ui, sans-serif; color: #f8fafc;
             background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
-            background-size: 400% 400%; animation: rainbowShift 16s ease infinite; padding: 20px;
+            background-size: 400% 400%; animation: rainbowShift 16s ease infinite; padding: 0;
         }
         body::before {
             content: ""; position: fixed; inset: -20%; background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent 25%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.2), transparent 30%); pointer-events: none; z-index: -1; animation: drift 11s ease-in-out infinite alternate;
         }
         @keyframes rainbowShift { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
         @keyframes drift { from{transform:translate3d(-3%, -2%, 0) scale(1);} to{transform:translate3d(3%, 2%, 0) scale(1.06);} }
+        .app-shell { display: flex; min-height: 100vh; }
+        .app-sidebar {
+            width: 220px; background: rgba(2, 6, 23, 0.92); border-right: 1px solid rgba(255,255,255,0.08); padding: 24px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 8px 0 24px rgba(0,0,0,0.24);
+        }
+        .app-sidebar .brand { font-size: 1rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #38bdf8; margin-bottom: 16px; }
+        .nav-link {
+            display: block; padding: 10px 12px; border-radius: 10px; color: #e2e8f0; text-decoration: none; font-weight: 600; background: rgba(255,255,255,0.04); border: 1px solid transparent; transition: all 0.2s ease;
+        }
+        .nav-link:hover, .nav-link.active { background: rgba(56,189,248,0.16); border-color: rgba(56,189,248,0.32); color: white; }
+        .page-content { flex: 1; padding: 20px; display: flex; justify-content: center; }
         .container {
-            max-width: 980px; margin: 0 auto; background: linear-gradient(145deg, rgba(30,41,59,0.9), rgba(15,23,42,0.82));
+            width: 100%; max-width: 980px; background: linear-gradient(145deg, rgba(30,41,59,0.9), rgba(15,23,42,0.82));
             border: 1px solid var(--border); border-radius: 24px; padding: 30px; box-shadow: 0 20px 45px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09);
             transform: perspective(1400px) rotateX(2deg) rotateY(-2deg);
         }
@@ -52,18 +63,44 @@
         .cloud-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .cloud-controls input { margin-bottom: 0; max-width: 280px; }
         .status { color: #fbbf24; font-size: 0.95rem; margin-top: 8px; }
+        .avatar-uploader { display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+        .question-image-row { display: flex; gap: 12px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+        .question-image-preview { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.16); background: #020617; }
+        .question-image-placeholder { width: 96px; height: 96px; border-radius: 12px; border: 1px dashed rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center; color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 8px; }
+        .avatar-preview { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.18); background: #020617; }
+        .sidebar-profile { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px; }
+        .sidebar-profile img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #020617; }
+        .sidebar-profile .profile-meta { min-width: 0; }
+        .sidebar-profile .profile-name { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-profile .profile-sub { font-size: 0.78rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .hidden { display: none !important; }
         .mini { font-size: 0.85rem; color: #94a3b8; }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <div class="brand">Quiz Hub</div>
+        <div class="sidebar-profile" id="sidebar-profile">
+            <img id="sidebar-profile-img" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="profile">
+            <div class="profile-meta">
+                <div class="profile-name" id="sidebar-profile-name">Guest</div>
+                <div class="profile-sub" id="sidebar-profile-sub">No account linked</div>
+            </div>
+        </div>
+        <a class="nav-link" href="host.html">Host</a>
+        <a class="nav-link" href="player.html">Player</a>
+        <a class="nav-link active" href="creator.html">Creator</a>
+        <a class="nav-link" href="dashboard.html">Dashboard</a>
+    </aside>
+    <div class="page-content">
+        <div class="container">
+            <div class="header">
         <div>
             <h1 style="margin:0 0 6px 0;">Quiz Blueprint Creator</h1>
             <p class="mini" style="margin:0;">Craft quiz questions with a familiar host-style interface, then export the JSON file for the host page.</p>
         </div>
-        <div class="v-tag">CREATOR v3.4.2</div>
+        <div class="v-tag">CREATOR v4.0.0</div>
     </div>
 
     <div class="toolbar">
@@ -86,17 +123,29 @@
             <button id="save-btn" class="btn">Save to Cloud</button>
             <button id="save-new-btn" class="btn secondary">Save as New</button>
         </div>
+        <div class="avatar-uploader">
+            <img id="profile-preview" class="avatar-preview" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="profile preview">
+            <div>
+                <button id="avatar-btn" class="btn secondary" type="button">Upload icon</button>
+                <div class="mini">This shows in the sidebar and on the host leaderboard.</div>
+            </div>
+        </div>
         <div id="cloud-status" class="status">Sign in to save quizzes to the cloud.</div>
     </div>
 
     <input id="quiz-file-input" type="file" accept="application/json" class="hidden">
+    <input id="avatar-file-input" type="file" accept="image/*" class="hidden">
     <div id="status" class="status">Ready to build a new quiz.</div>
 
     <div id="question-list" class="question-grid"></div>
+        </div>
+    </div>
 </div>
 
 <script>
     const fileInput = document.getElementById('quiz-file-input');
+    const avatarInput = document.getElementById('avatar-file-input');
+    const avatarBtn = document.getElementById('avatar-btn');
     const questionList = document.getElementById('question-list');
     const status = document.getElementById('status');
     const cloudStatus = document.getElementById('cloud-status');
@@ -106,6 +155,10 @@
     const userChip = document.getElementById('user-chip');
     const saveBtn = document.getElementById('save-btn');
     const saveNewBtn = document.getElementById('save-new-btn');
+    const profilePreview = document.getElementById('profile-preview');
+    const sidebarProfileName = document.getElementById('sidebar-profile-name');
+    const sidebarProfileImg = document.getElementById('sidebar-profile-img');
+    const sidebarProfileSub = document.getElementById('sidebar-profile-sub');
 
     const firebaseConfig = {
         apiKey: 'AIzaSyAUubLENrdSf73X4-oEAwS7uoLiQsAqEMs',
@@ -124,15 +177,44 @@
 
     const auth = firebase.auth();
     const db = firebase.firestore();
+    const storage = firebase.storage();
     const googleProvider = new firebase.auth.GoogleAuthProvider();
     googleProvider.setCustomParameters({ prompt: 'select_account' });
 
     let questions = [createBlankQuestion()];
     let currentUser = null;
     let currentQuizDocId = null;
+    let currentProfile = null;
+    const defaultAvatar = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+
+    function updateSidebarProfile(profile = null) {
+        const resolvedProfile = profile || currentProfile || getStoredProfile() || {};
+        const displayName = resolvedProfile.displayName || currentUser?.displayName || currentUser?.email || 'Guest';
+        const avatarUrl = resolvedProfile.avatarUrl || resolvedProfile.photoUrl || currentUser?.photoURL || defaultAvatar;
+        if (sidebarProfileName) sidebarProfileName.innerText = displayName;
+        if (sidebarProfileImg) sidebarProfileImg.src = avatarUrl;
+        if (sidebarProfileSub) sidebarProfileSub.innerText = currentUser ? 'Signed in' : 'No account linked';
+        if (profilePreview) profilePreview.src = avatarUrl;
+    }
+
+    function getStoredProfile() {
+        try {
+            const raw = localStorage.getItem('quizAppProfile');
+            return raw ? JSON.parse(raw) : null;
+        } catch (err) {
+            console.warn('Could not load profile from local storage', err);
+            return null;
+        }
+    }
+
+    function persistLocalProfile(profile) {
+        currentProfile = profile;
+        localStorage.setItem('quizAppProfile', JSON.stringify(profile));
+        updateSidebarProfile(profile);
+    }
 
     function createBlankQuestion() {
-        return { f: '', e: '', w: ['', '', ''], type: 'choice' };
+        return { f: '', e: '', w: ['', '', ''], type: 'choice', imageUrl: '' };
     }
 
     function normalizeQuestion(item) {
@@ -140,7 +222,8 @@
             f: String(item && item.f ? item.f : '').trim(),
             e: String(item && item.e ? item.e : '').trim(),
             w: Array.isArray(item && item.w) ? item.w.map(x => String(x || '').trim()).filter(Boolean) : [],
-            type: item && item.type === 'text' ? 'text' : 'choice'
+            type: item && item.type === 'text' ? 'text' : 'choice',
+            imageUrl: String(item && item.imageUrl ? item.imageUrl : '').trim()
         };
     }
 
@@ -189,6 +272,14 @@
                     <option value="choice" ${q.type === 'choice' ? 'selected' : ''}>Multiple choice</option>
                     <option value="text" ${q.type === 'text' ? 'selected' : ''}>Text answer</option>
                 </select>
+                <div class="question-image-row">
+                    ${q.imageUrl ? `<img class="question-image-preview" src="${escapeHtml(q.imageUrl)}" alt="Question image preview">` : '<div class="question-image-placeholder">No image yet</div>'}
+                    <div>
+                        <button class="btn secondary" type="button" onclick="triggerQuestionImageUpload(${index})" style="padding:8px 12px; margin-top:0;">Upload image</button>
+                        ${q.imageUrl ? `<button class="btn danger" type="button" onclick="removeQuestionImage(${index})" style="padding:8px 12px; margin-top:8px;">Remove</button>` : ''}
+                        <input class="hidden question-image-input" data-image-index="${index}" type="file" accept="image/*">
+                    </div>
+                </div>
                 <div class="choice-fields ${q.type === 'text' ? 'hidden' : ''}">
                     <label>Wrong option 1</label>
                     <input type="text" data-choice="w1" data-index="${index}" value="${escapeHtml((q.w && q.w[0]) || '')}">
@@ -206,6 +297,15 @@
 
     function attachEvents() {
         questionList.querySelectorAll('input, select').forEach(el => {
+            if (el.classList.contains('question-image-input')) {
+                el.addEventListener('change', async (event) => {
+                    const index = Number(event.target.dataset.imageIndex);
+                    const file = event.target.files && event.target.files[0];
+                    if (file) await uploadQuestionImage(index, file);
+                    event.target.value = '';
+                });
+                return;
+            }
             el.addEventListener('input', handleFieldChange);
             el.addEventListener('change', handleFieldChange);
         });
@@ -270,13 +370,45 @@
             f: (q.f || '').trim(),
             e: (q.e || '').trim(),
             w: Array.isArray(q.w) ? q.w.map(x => String(x || '').trim()).filter(Boolean) : [],
-            type: q.type === 'text' ? 'text' : 'choice'
+            type: q.type === 'text' ? 'text' : 'choice',
+            imageUrl: (q.imageUrl || '').trim()
         })).filter(q => q.f || q.e);
     }
 
     function updateStatus() {
         const filled = questions.filter(q => (q.f || '').trim() && (q.e || '').trim()).length;
         status.innerText = `Ready to export ${questions.length} question${questions.length === 1 ? '' : 's'}${filled ? ` (${filled} filled)` : ''}.`;
+    }
+
+    function triggerQuestionImageUpload(index) {
+        const input = document.querySelector(`.question-image-input[data-image-index="${index}"]`);
+        if (input) input.click();
+    }
+
+    async function uploadQuestionImage(index, file) {
+        if (!currentUser) {
+            cloudStatus.innerText = 'Please sign in with Google before uploading question images.';
+            return;
+        }
+        try {
+            const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+            const storageRef = storage.ref(`question-images/${currentUser.uid}/${Date.now()}-${index}.${ext}`);
+            const snapshot = await storageRef.put(file);
+            const imageUrl = await snapshot.ref.getDownloadURL();
+            questions[index].imageUrl = imageUrl;
+            renderQuestions();
+            persistDraft();
+            cloudStatus.innerText = 'Question image uploaded.';
+        } catch (err) {
+            cloudStatus.innerText = `Image upload failed: ${err.message}`;
+        }
+    }
+
+    function removeQuestionImage(index) {
+        questions[index].imageUrl = '';
+        renderQuestions();
+        persistDraft();
+        cloudStatus.innerText = 'Question image removed.';
     }
 
     function exportQuiz() {
@@ -297,6 +429,53 @@
         cloudStatus.innerText = 'Connect this app to a real Firebase project to enable Google sign-in and cloud quiz saves.';
     }
 
+    async function ensureProfileOnGoogle(user) {
+        if (!user) {
+            persistLocalProfile({ displayName: 'Guest', avatarUrl: defaultAvatar });
+            return null;
+        }
+
+        const profileDoc = await db.collection('profiles').doc(user.uid).get();
+        const existingProfile = profileDoc.exists ? profileDoc.data() : {};
+        const nextProfile = {
+            uid: user.uid,
+            displayName: existingProfile.displayName || user.displayName || user.email || 'Google user',
+            avatarUrl: existingProfile.avatarUrl || user.photoURL || defaultAvatar,
+            photoUrl: existingProfile.avatarUrl || user.photoURL || defaultAvatar,
+            email: user.email || '',
+            updatedAt: new Date().toISOString()
+        };
+        await db.collection('profiles').doc(user.uid).set(nextProfile, { merge: true });
+        persistLocalProfile(nextProfile);
+        return nextProfile;
+    }
+
+    async function uploadProfileAvatar(file) {
+        if (!currentUser) {
+            cloudStatus.innerText = 'Please sign in with Google before uploading an icon.';
+            return;
+        }
+        try {
+            const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+            const storageRef = storage.ref(`avatars/${currentUser.uid}/${Date.now()}.${ext}`);
+            const snapshot = await storageRef.put(file);
+            const avatarUrl = await snapshot.ref.getDownloadURL();
+            const profile = {
+                uid: currentUser.uid,
+                displayName: currentUser.displayName || currentUser.email || 'Google user',
+                avatarUrl,
+                photoUrl: avatarUrl,
+                email: currentUser.email || '',
+                updatedAt: new Date().toISOString()
+            };
+            await db.collection('profiles').doc(currentUser.uid).set(profile, { merge: true });
+            persistLocalProfile(profile);
+            cloudStatus.innerText = 'Profile icon updated and saved to Google.';
+        } catch (err) {
+            cloudStatus.innerText = `Icon upload failed: ${err.message}`;
+        }
+    }
+
     async function signInWithGoogle() {
         if (!isFirebaseConfigured) {
             showCloudConfigMessage();
@@ -313,23 +492,27 @@
     async function signOutUser() {
         try {
             await auth.signOut();
+            persistLocalProfile({ displayName: 'Guest', avatarUrl: defaultAvatar });
             cloudStatus.innerText = 'Signed out.';
         } catch (err) {
             cloudStatus.innerText = `Sign-out failed: ${err.message}`;
         }
     }
 
-    function updateAuthUi(user) {
+    async function updateAuthUi(user) {
         currentUser = user;
         if (user) {
             signInBtn.classList.add('hidden');
             signOutBtn.classList.remove('hidden');
-            userChip.innerText = `Signed in as ${user.displayName || user.email || 'Google user'}`;
+            const profile = await ensureProfileOnGoogle(user);
+            userChip.innerText = `Signed in as ${profile?.displayName || user.displayName || user.email || 'Google user'}`;
+            updateSidebarProfile(profile);
             cloudStatus.innerText = 'Ready to save quizzes to the cloud.';
         } else {
             signInBtn.classList.remove('hidden');
             signOutBtn.classList.add('hidden');
             userChip.innerText = 'Not signed in';
+            persistLocalProfile({ displayName: 'Guest', avatarUrl: defaultAvatar });
             cloudStatus.innerText = 'Sign in to save quizzes to the cloud.';
         }
     }
@@ -363,8 +546,9 @@
         await quizRef.set({
             title,
             questions: payload,
-            ownerName: currentUser.displayName || currentUser.email || 'Google user',
+            ownerName: currentProfile?.displayName || currentUser.displayName || currentUser.email || 'Google user',
             ownerEmail: currentUser.email || '',
+            ownerAvatarUrl: currentProfile?.avatarUrl || currentUser.photoURL || '',
             updatedAt: new Date().toISOString(),
             createdAt: currentQuizDocId === quizRef.id && !forceNew ? new Date().toISOString() : undefined
         }, { merge: true });
@@ -390,6 +574,15 @@
         }
     });
 
+    avatarInput.addEventListener('change', async () => {
+        const file = avatarInput.files && avatarInput.files[0];
+        if (file) {
+            await uploadProfileAvatar(file);
+            avatarInput.value = '';
+        }
+    });
+    avatarBtn.addEventListener('click', () => avatarInput.click());
+
     signInBtn.addEventListener('click', signInWithGoogle);
     signOutBtn.addEventListener('click', signOutUser);
     saveBtn.addEventListener('click', () => saveQuizToCloud(false));
@@ -400,6 +593,11 @@
             persistDraft();
         });
     });
+
+    const storedProfile = getStoredProfile();
+    if (storedProfile) {
+        updateSidebarProfile(storedProfile);
+    }
 
     auth.onAuthStateChanged(updateAuthUi);
     loadDraftFromSession();

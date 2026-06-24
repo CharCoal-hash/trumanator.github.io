@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projet de Vocab - Host (v3.4.2)</title>
+    <title>Projet de Vocab - Host (v4.0.0)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -18,9 +18,8 @@
         }
         * { box-sizing: border-box; }
         body {
-            font-family: system-ui, sans-serif; margin: 0; padding: 20px; min-height: 100vh; 
-            color: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;
-            background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
+            font-family: system-ui, sans-serif; margin: 0; padding: 0; min-height: 100vh; 
+            color: #f8fafc; background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
             background-size: 400% 400%;
             animation: rainbowShift 16s ease infinite;
             position: relative; overflow: hidden;
@@ -43,6 +42,18 @@
             from { transform: translate3d(-3%, -2%, 0) scale(1); }
             to { transform: translate3d(3%, 2%, 0) scale(1.08); }
         }
+        .app-shell { display: flex; min-height: 100vh; }
+        .app-sidebar {
+            width: 220px; background: rgba(2, 6, 23, 0.92); border-right: 1px solid rgba(255,255,255,0.08);
+            padding: 24px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 8px 0 24px rgba(0,0,0,0.24);
+        }
+        .app-sidebar .brand { font-size: 1rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #38bdf8; margin-bottom: 16px; }
+        .nav-link {
+            display: block; padding: 10px 12px; border-radius: 10px; color: #e2e8f0; text-decoration: none; font-weight: 600;
+            background: rgba(255,255,255,0.04); border: 1px solid transparent; transition: all 0.2s ease;
+        }
+        .nav-link:hover, .nav-link.active { background: rgba(56,189,248,0.16); border-color: rgba(56,189,248,0.32); color: white; }
+        .page-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
         .container {
             width: 100%; max-width: 900px; background: linear-gradient(145deg, rgba(30,41,59,0.86), rgba(15,23,42,0.76));
             border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; position: relative;
@@ -70,8 +81,12 @@
             transform: translateZ(10px);
         }
         .players-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .player-card { background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; transition: background 0.2s; }
+        .player-card { background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .player-card:hover { background: rgba(255, 255, 255, 0.1); }
+        .player-card img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        .leader-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px; }
+        .sidebar-profile { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); margin-bottom:6px; }
+        .sidebar-profile img { width:42px; height:42px; border-radius:50%; object-fit:cover; background:#020617; }
 
         /* WHEEL SYSTEM UI STYLES */
         .wheel-container {
@@ -106,6 +121,8 @@
 
         .hud { display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; font-size: 1.1rem; font-weight: bold; }
         .question { background: white; color: var(--bg-dark); padding: 30px; border-radius: 16px; font-size: 2.3rem; font-weight: 900; margin-bottom: 20px; }
+        .question-media { margin-bottom: 18px; display: flex; justify-content: center; }
+        .question-media img { max-width: 100%; max-height: 240px; border-radius: 12px; object-fit: cover; box-shadow: 0 10px 24px rgba(0,0,0,0.25); }
         .feed { min-height: 40px; color: #fbbf24; font-weight: bold; margin-bottom: 20px; padding: 10px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
@@ -141,11 +158,26 @@
     </style>
 </head>
 <body>
-
-<div class="container">
-    <div class="v-tag">HOST ENGINE v3.4.2</div>
-    
-    <div id="view-lobby">
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <div class="brand">Quiz Hub</div>
+        <div class="sidebar-profile" id="sidebar-profile">
+            <img id="sidebar-profile-img" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="profile">
+            <div style="min-width:0;">
+                <div id="sidebar-profile-name" style="font-size:0.95rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Guest</div>
+                <div id="sidebar-profile-sub" style="font-size:0.78rem; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">No account linked</div>
+            </div>
+        </div>
+        <a class="nav-link active" href="host.html">Host</a>
+        <a class="nav-link" href="player.html">Player</a>
+        <a class="nav-link" href="creator.html">Creator</a>
+        <a class="nav-link" href="dashboard.html">Dashboard</a>
+    </aside>
+    <div class="page-content">
+        <div class="container">
+            <div class="v-tag">HOST ENGINE v4.0.0</div>
+            
+            <div id="view-lobby">
         <h1>Projet de Vocabulaire</h1>
         <p class="subtitle">Scan to join the room</p>
         
@@ -206,6 +238,7 @@
         </div>
 
         <div class="question" id="q-text">...</div>
+        <div class="question-media hidden" id="question-media"></div>
         
         <div class="feed" id="game-feed">Waiting for answers...</div>
 
@@ -344,6 +377,51 @@
 
     const roomCode = Math.random().toString(36).substring(2,6).toUpperCase();
     let scores = {}, peerIds = {}, connections = {}, banned = new Set();
+    let profileCache = {};
+
+    function getStoredProfile() {
+        try {
+            const raw = localStorage.getItem('quizAppProfile');
+            return raw ? JSON.parse(raw) : null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function updateSidebarProfile(profile = null) {
+        const resolved = profile || getStoredProfile() || {};
+        const name = resolved.displayName || 'Guest';
+        const avatar = resolved.avatarUrl || resolved.photoUrl || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+        const sideName = document.getElementById('sidebar-profile-name');
+        const sideImg = document.getElementById('sidebar-profile-img');
+        const sideSub = document.getElementById('sidebar-profile-sub');
+        if (sideName) sideName.innerText = name;
+        if (sideImg) sideImg.src = avatar;
+        if (sideSub) sideSub.innerText = resolved.uid ? 'Signed in' : 'No account linked';
+    }
+
+    async function loadPlayerProfile(name) {
+        if (profileCache[name]) return profileCache[name];
+        try {
+            const profiles = await fetch('https://firestore.googleapis.com/v1/projects/quizapp-f7e02/databases/(default)/documents/profiles');
+            const payload = await profiles.json();
+            const docs = payload.documents || [];
+            const match = docs.find(doc => doc.fields?.displayName?.stringValue === name || doc.fields?.uid?.stringValue === name);
+            if (match) {
+                const fields = match.fields || {};
+                const profile = {
+                    displayName: fields.displayName?.stringValue || name,
+                    avatarUrl: fields.avatarUrl?.stringValue || fields.photoUrl?.stringValue || ''
+                };
+                profileCache[name] = profile;
+                return profile;
+            }
+        } catch (err) {
+            console.warn('Could not load profile for leaderboard', err);
+        }
+        profileCache[name] = { displayName: name, avatarUrl: '' };
+        return profileCache[name];
+    }
     
     let qIdx = 0, timeLeft = 25, timerInterval = null, answersCount = 0, state = "LOBBY", order = [];
     let votes = {}, protectedPlayers = new Set(), answeredPlayers = new Set(), selectedModUser = "";
@@ -358,6 +436,8 @@
 
     printLog(`Generating unique dynamic Room Session Code ID: ${roomCode}`);
     const peer = new Peer(roomCode);
+
+    updateSidebarProfile(getStoredProfile());
 
     peer.on('open', (id) => {
         document.getElementById("room-code").innerText = "ROOM CODE: " + id;
@@ -407,6 +487,7 @@
                 scores[name] = 0;
                 peerIds[name] = pId;
                 connections[name] = conn;
+                playerProfiles[name] = data.profile || { displayName: name, avatarUrl: '' };
                 
                 conn.send({ type: 'JOIN_OK', name: name });
                 printLog(`Registration confirmation packet returned to client alias: ${name}`, 'ok');
@@ -486,6 +567,7 @@
         delete scores[name];
         delete peerIds[name];
         delete connections[name];
+        delete playerProfiles[name];
         printLog(`De-allocated state allocations and references for removed player: ${name}`);
         
         if (state === "LOBBY") {
@@ -502,14 +584,16 @@
         }
     }
 
-    function updateLobby() {
+    async function updateLobby() {
         const target = document.getElementById("players-list-target");
         target.innerHTML = "";
         const list = Object.keys(scores);
         document.getElementById("player-count").innerText = list.length;
-        list.forEach(p => {
-            target.innerHTML += `<div class="player-card" onclick="openMod('${p}')">${p}</div>`;
-        });
+        for (const p of list) {
+            const profile = await loadPlayerProfile(p);
+            const avatarHtml = profile.avatarUrl ? `<img src="${profile.avatarUrl}" alt="${p}">` : '';
+            target.innerHTML += `<div class="player-card" onclick="openMod('${p}')">${avatarHtml}<span>${p}</span></div>`;
+        }
         document.getElementById("start-btn").style.display = list.length > 0 ? "inline-block" : "none";
         document.getElementById("spin-btn").disabled = list.length === 0 || isWheelSpinning;
         
@@ -727,6 +811,7 @@
         scores[nu] = scores[selectedModUser];
         peerIds[nu] = peerIds[selectedModUser];
         connections[nu] = connections[selectedModUser];
+        playerProfiles[nu] = playerProfiles[selectedModUser] || { displayName: nu, avatarUrl: '' };
         
         delete scores[selectedModUser];
         delete peerIds[selectedModUser];
@@ -775,6 +860,14 @@
         printLog(`Loading index position data [${qIdx}]. Parsing question item: "${curr.e}"`, 'ok');
         document.getElementById("hud-index").innerText = qIdx + 1;
         document.getElementById("q-text").innerText = `What is "${curr.e}" in French?`;
+        const mediaBox = document.getElementById("question-media");
+        if (curr.imageUrl) {
+            mediaBox.innerHTML = `<img src="${curr.imageUrl}" alt="Question visual">`;
+            mediaBox.classList.remove("hidden");
+        } else {
+            mediaBox.innerHTML = "";
+            mediaBox.classList.add("hidden");
+        }
         
         if (curr.type === "text") {
             document.getElementById("options-grid").classList.add("hidden");
@@ -812,7 +905,8 @@
                     qMode: curr.type,
                     options: order,
                     targets: pList.filter(x => x !== p),
-                    item: item
+                    item: item,
+                    imageUrl: curr.imageUrl || ''
                 });
             }
         });
@@ -897,7 +991,10 @@
         body.innerHTML = "";
         
         Object.entries(scores).sort((a,b) => b[1]-a[1]).forEach(([name, pts], i) => {
-            body.innerHTML += `<tr><td>#${i+1}</td><td>${name}</td><td>${pts} pts</td></tr>`;
+            const profile = getPlayerProfile(name);
+            const avatar = profile.avatarUrl ? `<img class="leader-avatar" src="${profile.avatarUrl}" alt="${name}">` : '';
+            const displayName = profile.displayName || name;
+            body.innerHTML += `<tr><td>#${i+1}</td><td>${avatar}<span>${displayName}</span></td><td>${pts} pts</td></tr>`;
         });
     }
 
