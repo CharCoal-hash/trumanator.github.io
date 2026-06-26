@@ -435,44 +435,58 @@
             return null;
         }
 
-        const profileDoc = await db.collection('profiles').doc(user.uid).get();
-        const existingProfile = profileDoc.exists ? profileDoc.data() : {};
+        // Keep local custom avatar if it exists, otherwise fall back to Google's photo
+        const localProf = getStoredProfile();
+        const customAvatarUrl = (localProf && localProf.avatarUrl && !localProf.avatarUrl.includes('gravatar.com')) 
+            ? localProf.avatarUrl 
+            : user.photoURL || defaultAvatar;
+
         const nextProfile = {
             uid: user.uid,
-            displayName: existingProfile.displayName || user.displayName || user.email || 'Google user',
-            avatarUrl: existingProfile.avatarUrl || user.photoURL || defaultAvatar,
-            photoUrl: existingProfile.avatarUrl || user.photoURL || defaultAvatar,
+            displayName: localProf?.displayName || user.displayName || user.email || 'Google user',
+            avatarUrl: customAvatarUrl,
+            photoUrl: customAvatarUrl,
             email: user.email || '',
             updatedAt: new Date().toISOString()
         };
-        await db.collection('profiles').doc(user.uid).set(nextProfile, { merge: true });
+        
+        // Removed Firebase Firestore (.set) call entirely
         persistLocalProfile(nextProfile);
         return nextProfile;
     }
 
     async function uploadProfileAvatar(file) {
-        if (!currentUser) {
-            cloudStatus.innerText = 'Please sign in with Google before uploading an icon.';
+        // 1. Enforce a 1.5MB size limit to protect browser localStorage limits (~5MB total)
+        if (file.size > 1.5 * 1024 * 1024) {
+            cloudStatus.innerText = 'Image is too large. Please select an image under 1.5MB.';
             return;
         }
+
         try {
-            const ext = (file.name.split('.').pop() || 'png').toLowerCase();
-            const storageRef = storage.ref(`avatars/${currentUser.uid}/${Date.now()}.${ext}`);
-            const snapshot = await storageRef.put(file);
-            const avatarUrl = await snapshot.ref.getDownloadURL();
+            // 2. Wrap the FileReader in a Promise so we can use modern async/await syntax
+            const localImageUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result); // Returns the Base64 Data URL string
+                reader.onerror = (err) => reject(new Error('Failed to read file locally.'));
+                reader.readAsDataURL(file);
+            });
+
+            // 3. Construct the profile using current user data or default to Guest values
             const profile = {
-                uid: currentUser.uid,
-                displayName: currentUser.displayName || currentUser.email || 'Google user',
-                avatarUrl,
-                photoUrl: avatarUrl,
-                email: currentUser.email || '',
+                uid: currentUser ? currentUser.uid : 'local-guest',
+                displayName: currentUser ? (currentUser.displayName || currentUser.email) : (currentProfile?.displayName || 'Guest'),
+                avatarUrl: localImageUrl,
+                photoUrl: localImageUrl,
+                email: currentUser ? currentUser.email : '',
                 updatedAt: new Date().toISOString()
             };
-            await db.collection('profiles').doc(currentUser.uid).set(profile, { merge: true });
+
+            // 4. Persist locally via your existing helper (updates localStorage and the UI elements)
             persistLocalProfile(profile);
-            cloudStatus.innerText = 'Profile icon updated and saved to Google.';
+            cloudStatus.innerText = 'Profile icon updated locally in your browser browser.';
+
         } catch (err) {
-            cloudStatus.innerText = `Icon upload failed: ${err.message}`;
+            cloudStatus.innerText = `Icon update failed: ${err.message}`;
         }
     }
 
@@ -543,14 +557,22 @@
             currentQuizDocId = quizRef.id;
         }
 
+        // 1. Check if we are creating a brand new document
+        const isBrandNewDoc = forceNew || !currentQuizDocId;
+
         await quizRef.set({
             title,
             questions: payload,
             ownerName: currentProfile?.displayName || currentUser.displayName || currentUser.email || 'Google user',
             ownerEmail: currentUser.email || '',
-            ownerAvatarUrl: currentProfile?.avatarUrl || currentUser.photoURL || '',
+            
+            // Only use the authenticated Google account avatar (falls back to empty string if none)
+            ownerAvatarUrl: currentUser?.photoURL || '',
+                
             updatedAt: new Date().toISOString(),
-            createdAt: currentQuizDocId === quizRef.id && !forceNew ? new Date().toISOString() : undefined
+            
+            // Only inject a creation date if the document is actually brand new
+            ...(isBrandNewDoc && { createdAt: new Date().toISOString() })
         }, { merge: true });
 
         currentQuizDocId = quizRef.id;
