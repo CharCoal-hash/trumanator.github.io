@@ -439,6 +439,18 @@
             return;
         }
         
+        // SYNC USERNAME VALUE CHANGE BACK TO LOCAL STORAGE
+        const localProfile = getStoredProfile() || {};
+        if (localProfile.displayName !== myName) {
+            localProfile.displayName = myName;
+            localProfile.updatedAt = new Date().toISOString();
+            localStorage.setItem('quizAppProfile', JSON.stringify(localProfile));
+            updateSidebarProfile();
+        }
+
+        // EXTRACT AVATAR (Fallback to Gravatar if none exists)
+        const myAvatar = localProfile.avatarUrl || localProfile.photoUrl || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+        
         document.getElementById("error-msg").style.color = "#fbbf24";
         document.getElementById("error-msg").innerText = "Connecting to web sockets cloud system...";
         document.getElementById("connect-btn").disabled = true;
@@ -454,7 +466,14 @@
             
             conn.on('open', () => { 
                 writeTrace("Remote channel sync pipeline verification completed. Pushing user identification data packets.", 'ok');
-                conn.send({ type: 'JOIN', name: myName, profile: getStoredProfile() }); 
+                
+                // PASSING DATA IN THE JOIN EVENT
+                conn.send({ 
+                    type: 'JOIN', 
+                    name: myName, 
+                    avatar: myAvatar, // Explicitly sending Base64 / link parameter
+                    profile: localProfile 
+                }); 
             });
 
             conn.on('data', (msg) => {

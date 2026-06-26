@@ -376,7 +376,7 @@
     });
 
     const roomCode = Math.random().toString(36).substring(2,6).toUpperCase();
-    let scores = {}, peerIds = {}, connections = {}, banned = new Set();
+    let scores = {}, peerIds = {}, connections = {}, banned = new Set(), playerProfiles = {};
     let profileCache = {};
 
     function getStoredProfile() {
@@ -476,8 +476,7 @@
                 conn.send({ type: 'BANNED' });
                 return;
             }
-
-            if (data.type === 'JOIN') {
+            if (data.type === 'JOIN') { 
                 let name = data.name.trim();
                 if (scores[name] !== undefined) {
                     name += "_" + Math.floor(Math.random() * 10);
@@ -487,7 +486,23 @@
                 scores[name] = 0;
                 peerIds[name] = pId;
                 connections[name] = conn;
-                playerProfiles[name] = data.profile || { displayName: name, avatarUrl: '' };
+
+                // --- BASE64 AVATAR EXTRACTION LOOKUP ---
+                let resolvedAvatar = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                
+                if (data.avatar) {
+                    resolvedAvatar = data.avatar; // Direct Base64 stream from connection payload
+                    printLog(`Custom Base64 avatar payload indexed cleanly for: ${name}`, 'ok');
+                } else if (data.profile && (data.profile.avatarUrl || data.profile.photoUrl)) {
+                    resolvedAvatar = data.profile.avatarUrl || data.profile.photoUrl;
+                }
+
+                // Cache the properties properly into the profile registry
+                playerProfiles[name] = { 
+                    displayName: name, 
+                    avatarUrl: resolvedAvatar 
+                };
+                // ----------------------------------------
                 
                 conn.send({ type: 'JOIN_OK', name: name });
                 printLog(`Registration confirmation packet returned to client alias: ${name}`, 'ok');
