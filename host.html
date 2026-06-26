@@ -22,7 +22,7 @@
             color: #f8fafc; background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
             background-size: 400% 400%;
             animation: rainbowShift 16s ease infinite;
-            position: relative; overflow: hidden;
+            position: relative; overflow-y: auto;
         }
         body::before {
             content: "";
@@ -59,7 +59,7 @@
             border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; position: relative;
             box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09);
             transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0);
-            transform-style: preserve-3d; overflow: hidden;
+            transform-style: preserve-3d; overflow-y: auto;
         }
         .container::before {
             content: "";
@@ -126,7 +126,7 @@
         .feed { min-height: 40px; color: #fbbf24; font-weight: bold; margin-bottom: 20px; padding: 10px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-        .option { background: rgba(255,255,255,0.05); border: 2px solid var(--border); padding: 20px; font-size: 1.2rem; font-weight: bold; border-radius: 12px; text-align: left; position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; }
+        .option { background: rgba(255,255,255,0.05); border: 2px solid var(--border); padding: 20px; font-size: 1.2rem; font-weight: bold; border-radius: 12px; text-align: left; position: relative; overflow-y: auto; display: flex; justify-content: space-between; align-items: center; }
         .opt-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(255,255,255,0.05); transition: width 0.5s; z-index: 1; }
         .opt-text { z-index: 2; }
         .opt-pct { z-index: 2; display: none; }
@@ -164,8 +164,8 @@
         <div class="sidebar-profile" id="sidebar-profile">
             <img id="sidebar-profile-img" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="profile">
             <div style="min-width:0;">
-                <div id="sidebar-profile-name" style="font-size:0.95rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Guest</div>
-                <div id="sidebar-profile-sub" style="font-size:0.78rem; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">No account linked</div>
+                <div id="sidebar-profile-name" style="font-size:0.95rem; font-weight:700; white-space:nowrap; overflow-y:auto; text-overflow:ellipsis;">Guest</div>
+                <div id="sidebar-profile-sub" style="font-size:0.78rem; color:#94a3b8; white-space:nowrap; overflow-y:auto; text-overflow:ellipsis;">No account linked</div>
             </div>
         </div>
         <a class="nav-link active" href="host.html">Host</a>
