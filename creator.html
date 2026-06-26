@@ -3,30 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Creator (v5.0.0)</title>
+    <title>Quiz Dashboard (v5.0.0)</title>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
     <style>
-        :root {
-            --bg-dark: #0f172a;
-            --panel: rgba(30, 41, 59, 0.82);
-            --border: rgba(255, 255, 255, 0.12);
-            --green: #10b981;
-            --blue: #3b82f6;
-            --purple: #8b5cf6;
-            --red: #ef4444;
-        }
+        :root { --bg-dark:#0f172a; --panel:rgba(30,41,59,0.82); --border:rgba(255,255,255,0.12); --green:#10b981; --blue:#3b82f6; --purple:#8b5cf6; --red:#ef4444; }
         * { box-sizing: border-box; }
-        body {
-            margin: 0; min-height: 100vh; font-family: system-ui, sans-serif; color: #f8fafc;
-            background: linear-gradient(120deg, #ff4d6d, #ff9966, #ffe66d, #8fd14f, #4cc9f0, #7b61ff, #ff4d6d);
-            background-size: 400% 400%; animation: rainbowShift 16s ease infinite; padding: 0;
-        }
-        body::before {
-            content: ""; position: fixed; inset: -20%; background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent 25%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.2), transparent 30%); pointer-events: none; z-index: -1; animation: drift 11s ease-in-out infinite alternate;
-        }
+        body { margin:0; min-height:100vh; font-family:system-ui,sans-serif; color:#f8fafc; padding:0; background:linear-gradient(120deg,#ff4d6d,#ff9966,#ffe66d,#8fd14f,#4cc9f0,#7b61ff,#ff4d6d); background-size:400% 400%; animation:rainbowShift 16s ease infinite; }
+        body::before { content:""; position:fixed; inset:-20%; background:radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent 25%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.2), transparent 30%); pointer-events:none; z-index:-1; animation:drift 11s ease-in-out infinite alternate; }
         @keyframes rainbowShift { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
         @keyframes drift { from{transform:translate3d(-3%, -2%, 0) scale(1);} to{transform:translate3d(3%, 2%, 0) scale(1.06);} }
         .app-shell { display: flex; min-height: 100vh; }
@@ -39,127 +24,48 @@
         }
         .nav-link:hover, .nav-link.active { background: rgba(56,189,248,0.16); border-color: rgba(56,189,248,0.32); color: white; }
         .page-content { flex: 1; padding: 20px; display: flex; justify-content: center; }
-        .container {
-            width: 100%; max-width: 980px; background: linear-gradient(145deg, rgba(30,41,59,0.9), rgba(15,23,42,0.82));
-            border: 1px solid var(--border); border-radius: 24px; padding: 30px; box-shadow: 0 20px 45px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09);
-            transform: perspective(1400px) rotateX(2deg) rotateY(-2deg);
-        }
-        .header { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
-        .v-tag { font-size: 0.8rem; font-family: monospace; color: #64748b; font-weight: bold; }
-        .btn {
-            border: none; border-radius: 12px; padding: 12px 18px; color: white; font-weight: bold; cursor: pointer; background: linear-gradient(145deg, var(--green), #047857); box-shadow: 0 8px 18px rgba(16,185,129,0.22); text-decoration: none; display: inline-block;
-        }
-        .btn.secondary { background: linear-gradient(145deg, var(--blue), #2563eb); }
-        .btn.danger { background: linear-gradient(145deg, var(--red), #b91c1c); }
-        .card { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(15,23,42,0.16)); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
-        .question-grid { display: grid; gap: 14px; }
-        label { display: block; font-size: 0.9rem; margin-bottom: 5px; color: #cbd5e1; }
-        input[type="text"], select, textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: #020617; color: white; margin-bottom: 10px; }
-        .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-        .auth-card { background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(15,23,42,0.16)); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
-        .auth-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-        .user-chip { color: #cbd5e1; font-size: 0.95rem; }
-        .cloud-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .cloud-controls input { margin-bottom: 0; max-width: 280px; }
-        .status { color: #fbbf24; font-size: 0.95rem; margin-top: 8px; }
-        .avatar-uploader { display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
-        .question-image-row { display: flex; gap: 12px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-        .question-image-preview { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.16); background: #020617; }
-        .question-image-placeholder { width: 96px; height: 96px; border-radius: 12px; border: 1px dashed rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center; color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 8px; }
-        .avatar-preview { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.18); background: #020617; }
-        .sidebar-profile { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px; }
-        .sidebar-profile img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #020617; }
-        .sidebar-profile .profile-meta { min-width: 0; }
-        .sidebar-profile .profile-name { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .sidebar-profile .profile-sub { font-size: 0.78rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .hidden { display: none !important; }
-        .mini { font-size: 0.85rem; color: #94a3b8; }
+        .container { width: 100%; max-width:980px; background:linear-gradient(145deg, rgba(30,41,59,0.9), rgba(15,23,42,0.82)); border:1px solid var(--border); border-radius:24px; padding:28px; box-shadow:0 20px 45px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); }
+        .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+        .btn { border:none; border-radius:12px; padding:12px 16px; color:white; font-weight:bold; cursor:pointer; background:linear-gradient(145deg, var(--green), #047857); text-decoration:none; display:inline-block; }
+        .btn.secondary { background:linear-gradient(145deg, var(--blue), #2563eb); }
+        .btn.danger { background:linear-gradient(145deg, var(--red), #b91c1c); }
+        .card { background:linear-gradient(145deg, rgba(255,255,255,0.08), rgba(15,23,42,0.16)); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:16px; margin-bottom:12px; }
+        .muted { color:#94a3b8; font-size:0.95rem; }
+        .hidden { display:none !important; }
+        .list { display:grid; gap:12px; }
     </style>
 </head>
 <body>
 <div class="app-shell">
     <aside class="app-sidebar">
         <div class="brand">Quiz Hub</div>
-        <div class="sidebar-profile" id="sidebar-profile">
-            <img id="sidebar-profile-img" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="profile">
-            <div class="profile-meta">
-                <div class="profile-name" id="sidebar-profile-name">Guest</div>
-                <div class="profile-sub" id="sidebar-profile-sub">No account linked</div>
+        <div class="sidebar-profile" id="sidebar-profile" style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); margin-bottom:6px;">
+            <img id="sidebar-profile-img" src="https://www.gravatar.com/avatar/00000000000000000000000000000?d=mp&f=y" alt="profile" style="width:42px; height:42px; border-radius:50%; object-fit:cover; background:#020617;">
+            <div style="min-width:0;">
+                <div id="sidebar-profile-name" style="font-size:0.95rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Guest</div>
+                <div id="sidebar-profile-sub" style="font-size:0.78rem; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">No account linked</div>
             </div>
         </div>
         <a class="nav-link" href="host.html">Host</a>
         <a class="nav-link" href="player.html">Player</a>
-        <a class="nav-link active" href="creator.html">Creator</a>
-        <a class="nav-link" href="dashboard.html">Dashboard</a>
+        <a class="nav-link" href="creator.html">Creator</a>
+        <a class="nav-link active" href="dashboard.html">Dashboard</a>
     </aside>
     <div class="page-content">
         <div class="container">
-            <div class="header">
-        <div>
-            <h1 style="margin:0 0 6px 0;">Quiz Blueprint Creator</h1>
-            <p class="mini" style="margin:0;">Craft quiz questions with a familiar host-style interface, then export the JSON file for the host page.</p>
-        </div>
-        <div class="v-tag">CREATOR v5.0.0</div>
-    </div>
-
+            <h1 style="margin:0 0 8px 0;">Quiz Dashboard</h1>
+    <p class="muted" style="margin:0 0 16px 0;">Manage your saved quizzes from Google Cloud.</p>
     <div class="toolbar">
-        <button class="btn" onclick="addQuestion()">Add Question</button>
-        <button class="btn secondary" onclick="fileInput.click()">Import JSON</button>
-        <button class="btn secondary" onclick="exportQuiz()">Export JSON</button>
-        <button class="btn danger" onclick="resetQuestions()">Reset</button>
-        <a class="btn secondary" href="host.html" target="_blank" style="padding-top:11px;">Open Host</a>
-        <a class="btn secondary" href="dashboard.html" style="padding-top:11px;">Open Dashboard</a>
+        <button id="sign-in-btn" class="btn secondary">Sign in with Google</button>
+        <button id="sign-out-btn" class="btn danger hidden">Sign out</button>
+        <a class="btn secondary" href="creator.html">Back to Creator</a>
     </div>
-
-    <div class="auth-card">
-        <div class="auth-row">
-            <button id="sign-in-btn" class="btn secondary">Sign in with Google</button>
-            <button id="sign-out-btn" class="btn danger hidden">Sign out</button>
-            <span id="user-chip" class="user-chip">Not signed in</span>
-        </div>
-        <div class="cloud-controls">
-            <input id="quiz-title" type="text" placeholder="Quiz title" value="">
-            <button id="save-btn" class="btn">Save to Cloud</button>
-            <button id="save-new-btn" class="btn secondary">Save as New</button>
-        </div>
-        <div class="avatar-uploader">
-            <img id="profile-preview" class="avatar-preview" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" alt="profile preview">
-            <div>
-                <button id="avatar-btn" class="btn secondary" type="button">Upload icon</button>
-                <div class="mini">This shows in the sidebar and on the host leaderboard.</div>
-            </div>
-        </div>
-        <div id="cloud-status" class="status">Sign in to save quizzes to the cloud.</div>
-    </div>
-
-    <input id="quiz-file-input" type="file" accept="application/json" class="hidden">
-    <input id="avatar-file-input" type="file" accept="image/*" class="hidden">
-    <div id="status" class="status">Ready to build a new quiz.</div>
-
-    <div id="question-list" class="question-grid"></div>
+    <div id="status" class="muted">Loading your quizzes…</div>
+    <div id="quiz-list" class="list" style="margin-top:16px;"></div>
         </div>
     </div>
 </div>
-
 <script>
-    const fileInput = document.getElementById('quiz-file-input');
-    const avatarInput = document.getElementById('avatar-file-input');
-    const avatarBtn = document.getElementById('avatar-btn');
-    const questionList = document.getElementById('question-list');
-    const status = document.getElementById('status');
-    const cloudStatus = document.getElementById('cloud-status');
-    const quizTitleInput = document.getElementById('quiz-title');
-    const signInBtn = document.getElementById('sign-in-btn');
-    const signOutBtn = document.getElementById('sign-out-btn');
-    const userChip = document.getElementById('user-chip');
-    const saveBtn = document.getElementById('save-btn');
-    const saveNewBtn = document.getElementById('save-new-btn');
-    const profilePreview = document.getElementById('profile-preview');
-    const sidebarProfileName = document.getElementById('sidebar-profile-name');
-    const sidebarProfileImg = document.getElementById('sidebar-profile-img');
-    const sidebarProfileSub = document.getElementById('sidebar-profile-sub');
-
     const firebaseConfig = {
         apiKey: 'AIzaSyAUubLENrdSf73X4-oEAwS7uoLiQsAqEMs',
         authDomain: 'quizapp-f7e02.firebaseapp.com',
@@ -170,500 +76,189 @@
         measurementId: 'G-GESK9DQXT1'
     };
     const isFirebaseConfigured = Object.values(firebaseConfig).every(value => typeof value === 'string' && !value.startsWith('YOUR_'));
-
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    const storage = firebase.storage();
     const googleProvider = new firebase.auth.GoogleAuthProvider();
     googleProvider.setCustomParameters({ prompt: 'select_account' });
-
-    let questions = [createBlankQuestion()];
-    let currentUser = null;
-    let currentQuizDocId = null;
-    let currentProfile = null;
-    const defaultAvatar = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
-
-    function updateSidebarProfile(profile = null) {
-        const resolvedProfile = profile || currentProfile || getStoredProfile() || {};
-        const displayName = resolvedProfile.displayName || currentUser?.displayName || currentUser?.email || 'Guest';
-        const avatarUrl = resolvedProfile.avatarUrl || resolvedProfile.photoUrl || currentUser?.photoURL || defaultAvatar;
-        
-        if (sidebarProfileName) {
-            // 1. Check if the input field has already been created to avoid resetting cursor focus
-            let nameInput = sidebarProfileName.querySelector('.profile-name-input');
-            
-            if (!nameInput) {
-                // Remove the old plain text and replace it with a styled transparent input box
-                sidebarProfileName.innerHTML = `
-                    <input type="text" class="profile-name-input" 
-                           value="${escapeHtml(displayName)}" 
-                           style="background:transparent; border:none; border-bottom:1px dashed rgba(255,255,255,0.3); color:white; font-size: inherit; font-weight: inherit; font-family: inherit; width: 100%; padding: 2px 0; outline: none;" 
-                           placeholder="Enter name...">
-                `;
-                nameInput = sidebarProfileName.querySelector('.profile-name-input');
-                
-                // 2. Attach a listener to automatically capture and save changes to localStorage as they type
-                nameInput.addEventListener('input', (e) => {
-                    const cleanName = e.target.value.trim();
-                    const updatedProfile = {
-                        ...resolvedProfile,
-                        displayName: cleanName || 'Guest', // defaults back to Guest if they erase it completely
-                        updatedAt: new Date().toISOString()
-                    };
-                    
-                    // Save to local storage without re-rendering the whole sidebar (keeps input focused)
-                    currentProfile = updatedProfile;
-                    localStorage.setItem('quizAppProfile', JSON.stringify(updatedProfile));
-                    
-                    // Update the fallback preview image card link if it exists on screen
-                    if (profilePreview) {
-                        // Just synchronizes currentProfile across other variables
-                    }
-                });
-            } else {
-                // If the input element exists and isn't actively being typed in, update its value
-                if (document.activeElement !== nameInput) {
-                    nameInput.value = displayName;
-                }
-            }
-        }
-
-        if (sidebarProfileImg) sidebarProfileImg.src = avatarUrl;
-        if (sidebarProfileSub) sidebarProfileSub.innerText = currentUser ? 'Signed in' : 'No account linked';
-        if (profilePreview) profilePreview.src = avatarUrl;
-    }
-
+    
     function getStoredProfile() {
         try {
             const raw = localStorage.getItem('quizAppProfile');
             return raw ? JSON.parse(raw) : null;
         } catch (err) {
-            console.warn('Could not load profile from local storage', err);
             return null;
         }
     }
 
-    function persistLocalProfile(profile) {
-        currentProfile = profile;
-        localStorage.setItem('quizAppProfile', JSON.stringify(profile));
-        updateSidebarProfile(profile);
+    // --- READS USERNAME AND B64 ICON DIRECTLY FROM LOCALSTORAGE ---
+    function updateSidebarProfile() {
+        const profile = getStoredProfile() || {};
+        
+        // Prioritize b64Avatar string over older web URLs
+        const name = profile.displayName || 'Guest';
+        const avatar = profile.b64Avatar || profile.avatarUrl || profile.photoUrl || 'https://www.gravatar.com/avatar/00000000000000000000000000000?d=mp&f=y';
+        
+        document.getElementById('sidebar-profile-name').innerText = name;
+        document.getElementById('sidebar-profile-img').src = avatar;
+        document.getElementById('sidebar-profile-sub').innerText = profile.uid ? 'Signed in' : 'No account linked';
     }
 
-    function createBlankQuestion() {
-        return { f: '', e: '', w: ['', '', ''], type: 'choice', imageUrl: '' };
-    }
+    // Initialize sidebar based on cached layout variables immediately
+    updateSidebarProfile();
 
-    function normalizeQuestion(item) {
-        return {
-            f: String(item && item.f ? item.f : '').trim(),
-            e: String(item && item.e ? item.e : '').trim(),
-            w: Array.isArray(item && item.w) ? item.w.map(x => String(x || '').trim()).filter(Boolean) : [],
-            type: item && item.type === 'text' ? 'text' : 'choice',
-            imageUrl: String(item && item.imageUrl ? item.imageUrl : '').trim()
-        };
-    }
+    const quizList = document.getElementById('quiz-list');
+    const status = document.getElementById('status');
+    const signInBtn = document.getElementById('sign-in-btn');
+    const signOutBtn = document.getElementById('sign-out-btn');
 
-    function loadDraftFromSession() {
-        try {
-            const draft = sessionStorage.getItem('creatorDraft');
-            const title = sessionStorage.getItem('creatorTitle');
-            const docId = sessionStorage.getItem('creatorDocId');
-            if (draft) {
-                const parsed = JSON.parse(draft);
-                if (Array.isArray(parsed)) {
-                    questions = parsed.map(normalizeQuestion).filter(q => q.f || q.e);
-                    if (questions.length === 0) questions = [createBlankQuestion()];
-                }
-            }
-            if (title) {
-                quizTitleInput.value = title;
-            }
-            if (docId) {
-                currentQuizDocId = docId;
-            }
-        } catch (err) {
-            console.warn('Could not restore draft quiz', err);
+    function renderQuizzes(quizzes) {
+        quizList.innerHTML = '';
+        if (!quizzes.length) {
+            quizList.innerHTML = '<div class="card">No quizzes saved yet.</div>';
+            return;
         }
-    }
-
-    function renderQuestions() {
-        questionList.innerHTML = '';
-        if (questions.length === 0) {
-            questions = [createBlankQuestion()];
-        }
-        questions.forEach((q, index) => {
+        quizzes.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <h3 style="margin:0;">Question ${index + 1}</h3>
-                    <button class="btn danger" onclick="removeQuestion(${index})" style="padding:8px 12px;">Remove</button>
-                </div>
-                <label>Correct answer / French term</label>
-                <input type="text" data-field="answer" data-index="${index}" value="${escapeHtml(q.f || '')}">
-                <label>English prompt</label>
-                <input type="text" data-field="e" data-index="${index}" value="${escapeHtml(q.e || '')}">
-                <label>Question type</label>
-                <select data-field="type" data-index="${index}">
-                    <option value="choice" ${q.type === 'choice' ? 'selected' : ''}>Multiple choice</option>
-                    <option value="text" ${q.type === 'text' ? 'selected' : ''}>Text answer</option>
-                </select>
-                <div class="question-image-row">
-                    ${q.imageUrl ? `<img class="question-image-preview" src="${escapeHtml(q.imageUrl)}" alt="Question image preview">` : '<div class="question-image-placeholder">No image yet</div>'}
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
                     <div>
-                        <button class="btn secondary" type="button" onclick="triggerQuestionImageUpload(${index})" style="padding:8px 12px; margin-top:0;">Upload image</button>
-                        ${q.imageUrl ? `<button class="btn danger" type="button" onclick="removeQuestionImage(${index})" style="padding:8px 12px; margin-top:8px;">Remove</button>` : ''}
-                        <input class="hidden question-image-input" data-image-index="${index}" type="file" accept="image/*">
+                        <strong>${item.title || 'Untitled quiz'}</strong>
+                        <div class="muted">${item.questions ? item.questions.length : 0} questions</div>
+                        <div class="muted">Saved by ${item.ownerName || 'a user'}</div>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn secondary" onclick="downloadQuiz('${item.id}')">Download</button>
+                        <button class="btn danger" onclick="deleteQuiz('${item.id}')">Delete</button>
                     </div>
                 </div>
-                <div class="choice-fields ${q.type === 'text' ? 'hidden' : ''}">
-                    <label>Wrong option 1</label>
-                    <input type="text" data-choice="w1" data-index="${index}" value="${escapeHtml((q.w && q.w[0]) || '')}">
-                    <label>Wrong option 2</label>
-                    <input type="text" data-choice="w2" data-index="${index}" value="${escapeHtml((q.w && q.w[1]) || '')}">
-                    <label>Wrong option 3</label>
-                    <input type="text" data-choice="w3" data-index="${index}" value="${escapeHtml((q.w && q.w[2]) || '')}">
-                </div>
             `;
-            questionList.appendChild(card);
-        });
-        attachEvents();
-        updateStatus();
-    }
-
-    function attachEvents() {
-        questionList.querySelectorAll('input, select').forEach(el => {
-            if (el.classList.contains('question-image-input')) {
-                el.addEventListener('change', async (event) => {
-                    const index = Number(event.target.dataset.imageIndex);
-                    const file = event.target.files && event.target.files[0];
-                    if (file) await uploadQuestionImage(index, file);
-                    event.target.value = '';
-                });
-                return;
-            }
-            el.addEventListener('input', handleFieldChange);
-            el.addEventListener('change', handleFieldChange);
+            quizList.appendChild(card);
         });
     }
 
-    function handleFieldChange(event) {
-        const index = Number(event.target.dataset.index);
-        const field = event.target.dataset.field;
-        const choice = event.target.dataset.choice;
-        const q = questions[index];
-        if (!q) return;
-
-        if (field === 'answer') q.f = event.target.value;
-        else if (field === 'e') q.e = event.target.value;
-        else if (field === 'type') {
-            q.type = event.target.value;
-            if (q.type === 'text') {
-                q.w = [];
-            } else {
-                q.w = q.w || ['', '', ''];
-            }
-            renderQuestions();
-            return;
-        } else if (choice) {
-            const arr = Array.isArray(q.w) ? [...q.w] : ['', '', ''];
-            if (choice === 'w1') {
-                arr[0] = event.target.value;
-            } else if (choice === 'w2') {
-                arr[1] = event.target.value;
-            } else if (choice === 'w3') {
-                arr[2] = event.target.value;
-            }
-            q.w = [arr[0] || '', arr[1] || '', arr[2] || ''];
-        }
-        updateStatus();
-    }
-
-    function addQuestion() {
-        questions.push(createBlankQuestion());
-        renderQuestions();
-    }
-
-    function removeQuestion(index) {
-        questions.splice(index, 1);
-        if (questions.length === 0) questions.push(createBlankQuestion());
-        renderQuestions();
-    }
-
-    function resetQuestions() {
-        questions = [createBlankQuestion()];
-        quizTitleInput.value = '';
-        currentQuizDocId = null;
-        renderQuestions();
-    }
-
-    function escapeHtml(value) {
-        return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');
-    }
-
-    function serializeQuestions() {
-        return questions.map(q => ({
-            f: (q.f || '').trim(),
-            e: (q.e || '').trim(),
-            w: Array.isArray(q.w) ? q.w.map(x => String(x || '').trim()).filter(Boolean) : [],
-            type: q.type === 'text' ? 'text' : 'choice',
-            imageUrl: (q.imageUrl || '').trim()
-        })).filter(q => q.f || q.e);
-    }
-
-    function updateStatus() {
-        const filled = questions.filter(q => (q.f || '').trim() && (q.e || '').trim()).length;
-        status.innerText = `Ready to export ${questions.length} question${questions.length === 1 ? '' : 's'}${filled ? ` (${filled} filled)` : ''}.`;
-    }
-
-    function triggerQuestionImageUpload(index) {
-        const input = document.querySelector(`.question-image-input[data-image-index="${index}"]`);
-        if (input) input.click();
-    }
-
-    async function uploadQuestionImage(index, file) {
-        if (!currentUser) {
-            cloudStatus.innerText = 'Please sign in with Google before uploading question images.';
+    async function loadQuizzes(user) {
+        if (!isFirebaseConfigured) {
+            quizList.innerHTML = '<div class="card">This dashboard needs a real Firebase project to load cloud quizzes.</div>';
+            status.innerText = 'Connect this app to Firebase to enable cloud quiz storage.';
             return;
         }
+        if (!user) {
+            quizList.innerHTML = '<div class="card">Sign in to view your saved quizzes.</div>';
+            status.innerText = 'Please sign in to see your cloud quizzes.';
+            return;
+        }
+        status.innerText = 'Loading your quizzes…';
         try {
-            const ext = (file.name.split('.').pop() || 'png').toLowerCase();
-            const storageRef = storage.ref(`question-images/${currentUser.uid}/${Date.now()}-${index}.${ext}`);
-            const snapshot = await storageRef.put(file);
-            const imageUrl = await snapshot.ref.getDownloadURL();
-            questions[index].imageUrl = imageUrl;
-            renderQuestions();
-            persistDraft();
-            cloudStatus.innerText = 'Question image uploaded.';
+            const snapshot = await db.collection('users').doc(user.uid).collection('quizzes').orderBy('updatedAt', 'desc').get();
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderQuizzes(items);
+            status.innerText = `Loaded ${items.length} quiz${items.length === 1 ? '' : 'es'}.`;
         } catch (err) {
-            cloudStatus.innerText = `Image upload failed: ${err.message}`;
+            status.innerText = `Failed to load quizzes: ${err.message}`;
         }
     }
 
-    function removeQuestionImage(index) {
-        questions[index].imageUrl = '';
-        renderQuestions();
-        persistDraft();
-        cloudStatus.innerText = 'Question image removed.';
+    // --- CONVERTS IMAGE URL TO BASE64 STRING STREAM SAFELY ---
+    async function convertImageUrlToBase64(url) {
+        if (!url) return '';
+        try {
+            const response = await fetch(url, { mode: 'cors' });
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (e) {
+            console.warn("Could not convert avatar image link to base64 stream automatically:", e);
+            return url; // Fallback to direct network image context if standard extraction errors out
+        }
     }
 
-    function exportQuiz() {
-        const payload = serializeQuestions();
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    async function signIn() {
+        if (!isFirebaseConfigured) {
+            status.innerText = 'Connect this app to a real Firebase project to enable Google sign-in.';
+            return;
+        }
+        try { await auth.signInWithPopup(googleProvider); } catch (err) {
+            const message = err && err.message ? err.message : String(err);
+            if (message.includes('authorized for OAuth operations')) {
+                status.innerText = 'Firebase blocked the sign-in because this domain is not authorized. Add this site to Authentication → Settings → Authorized domains in Firebase, then try again.';
+            } else {
+                status.innerText = `Sign-in failed: ${message}`;
+            }
+        }
+    }
+
+    async function signOut() { 
+        try { 
+            await auth.signOut(); 
+        } catch (err) { 
+            status.innerText = `Sign-out failed: ${err.message}`; 
+        } 
+    }
+
+    window.downloadQuiz = async function(docId) {
+        const doc = await db.collection('users').doc(auth.currentUser.uid).collection('quizzes').doc(docId).get();
+        if (!doc.exists) return;
+        const data = doc.data();
+        const blob = new Blob([JSON.stringify(data.questions || [], null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'quiz.json';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        status.innerText = `Exported ${payload.length} question${payload.length === 1 ? '' : 's'} to quiz.json.`;
-    }
+        link.download = `${(data.title || 'quiz').replace(/\s+/g, '-').toLowerCase()}.json`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+    };
 
-    function showCloudConfigMessage() {
-        cloudStatus.innerText = 'Connect this app to a real Firebase project to enable Google sign-in and cloud quiz saves.';
-    }
-
-    async function ensureProfileOnGoogle(user) {
-        if (!user) {
-            persistLocalProfile({ displayName: 'Guest', avatarUrl: defaultAvatar });
-            return null;
+    window.deleteQuiz = async function(docId) {
+        if (!auth.currentUser) return;
+        if (confirm("Are you sure you want to delete this quiz from the cloud?")) {
+            await db.collection('users').doc(auth.currentUser.uid).collection('quizzes').doc(docId).delete();
+            loadQuizzes(auth.currentUser);
         }
+    };
 
-        // Keep local custom avatar if it exists, otherwise fall back to Google's photo
-        const localProf = getStoredProfile();
-        const customAvatarUrl = (localProf && localProf.avatarUrl && !localProf.avatarUrl.includes('gravatar.com')) 
-            ? localProf.avatarUrl 
-            : user.photoURL || defaultAvatar;
-
-        const nextProfile = {
-            uid: user.uid,
-            displayName: localProf?.displayName || user.displayName || user.email || 'Google user',
-            avatarUrl: customAvatarUrl,
-            photoUrl: customAvatarUrl,
-            email: user.email || '',
-            updatedAt: new Date().toISOString()
-        };
-        
-        // Removed Firebase Firestore (.set) call entirely
-        persistLocalProfile(nextProfile);
-        return nextProfile;
-    }
-
-    async function uploadProfileAvatar(file) {
-        // 1. Enforce a 1.5MB size limit to protect browser localStorage limits (~5MB total)
-        if (file.size > 1.5 * 1024 * 1024) {
-            cloudStatus.innerText = 'Image is too large. Please select an image under 1.5MB.';
-            return;
-        }
-
-        try {
-            // 2. Wrap the FileReader in a Promise so we can use modern async/await syntax
-            const localImageUrl = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result); // Returns the Base64 Data URL string
-                reader.onerror = (err) => reject(new Error('Failed to read file locally.'));
-                reader.readAsDataURL(file);
-            });
-
-            // 3. Construct the profile using current user data or default to Guest values
-            const profile = {
-                uid: currentUser ? currentUser.uid : 'local-guest',
-                displayName: currentUser ? (currentUser.displayName || currentUser.email) : (currentProfile?.displayName || 'Guest'),
-                avatarUrl: localImageUrl,
-                photoUrl: localImageUrl,
-                email: currentUser ? currentUser.email : '',
-                updatedAt: new Date().toISOString()
-            };
-
-            // 4. Persist locally via your existing helper (updates localStorage and the UI elements)
-            persistLocalProfile(profile);
-            cloudStatus.innerText = 'Profile icon updated locally in your browser browser.';
-
-        } catch (err) {
-            cloudStatus.innerText = `Icon update failed: ${err.message}`;
-        }
-    }
-
-    async function signInWithGoogle() {
-        if (!isFirebaseConfigured) {
-            showCloudConfigMessage();
-            return;
-        }
-        try {
-            await auth.signInWithPopup(googleProvider);
-            cloudStatus.innerText = 'Signed in. You can save quizzes to the cloud.';
-        } catch (err) {
-            cloudStatus.innerText = `Sign-in failed: ${err.message}`;
-        }
-    }
-
-    async function signOutUser() {
-        try {
-            await auth.signOut();
-            persistLocalProfile({ displayName: 'Guest', avatarUrl: defaultAvatar });
-            cloudStatus.innerText = 'Signed out.';
-        } catch (err) {
-            cloudStatus.innerText = `Sign-out failed: ${err.message}`;
-        }
-    }
-
-    async function updateAuthUi(user) {
-        currentUser = user;
+    auth.onAuthStateChanged(async (user) => {
         if (user) {
             signInBtn.classList.add('hidden');
             signOutBtn.classList.remove('hidden');
-            const profile = await ensureProfileOnGoogle(user);
-            userChip.innerText = `Signed in as ${profile?.displayName || user.displayName || user.email || 'Google user'}`;
-            updateSidebarProfile(profile);
-            cloudStatus.innerText = 'Ready to save quizzes to the cloud.';
+            
+            // Check if we already have an initialized b64 profile cached locally
+            let currentCachedProfile = getStoredProfile() || {};
+            let base64AvatarString = currentCachedProfile.b64Avatar || '';
+            
+            if (!base64AvatarString && user.photoURL) {
+                status.innerText = 'Processing secure profile image assets...';
+                base64AvatarString = await convertImageUrlToBase64(user.photoURL);
+            }
+            
+            const profilePayload = {
+                uid: user.uid,
+                displayName: currentCachedProfile.displayName || user.displayName || 'Google User',
+                avatarUrl: user.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000?d=mp&f=y',
+                b64Avatar: base64AvatarString
+            };
+            
+            localStorage.setItem('quizAppProfile', JSON.stringify(profilePayload));
+            updateSidebarProfile();
+            loadQuizzes(user);
         } else {
             signInBtn.classList.remove('hidden');
             signOutBtn.classList.add('hidden');
-            userChip.innerText = 'Not signed in';
-            persistLocalProfile({ displayName: 'Guest', avatarUrl: defaultAvatar });
-            cloudStatus.innerText = 'Sign in to save quizzes to the cloud.';
-        }
-    }
-
-    function persistDraft() {
-        sessionStorage.setItem('creatorDraft', JSON.stringify(serializeQuestions()));
-        sessionStorage.setItem('creatorTitle', quizTitleInput.value.trim());
-        if (currentQuizDocId) sessionStorage.setItem('creatorDocId', currentQuizDocId);
-    }
-
-    async function saveQuizToCloud(forceNew = false) {
-        if (!isFirebaseConfigured) {
-            showCloudConfigMessage();
-            return;
-        }
-        if (!currentUser) {
-            cloudStatus.innerText = 'Please sign in with Google before saving to the cloud.';
-            return;
-        }
-
-        const title = (quizTitleInput.value || 'Untitled quiz').trim() || 'Untitled quiz';
-        const payload = serializeQuestions();
-        const quizRef = forceNew || !currentQuizDocId
-            ? db.collection('users').doc(currentUser.uid).collection('quizzes').doc()
-            : db.collection('users').doc(currentUser.uid).collection('quizzes').doc(currentQuizDocId);
-
-        if (!forceNew && !currentQuizDocId) {
-            currentQuizDocId = quizRef.id;
-        }
-
-        // 1. Check if we are creating a brand new document
-        const isBrandNewDoc = forceNew || !currentQuizDocId;
-
-        await quizRef.set({
-            title,
-            questions: payload,
-            ownerName: currentProfile?.displayName || currentUser.displayName || currentUser.email || 'Google user',
-            ownerEmail: currentUser.email || '',
             
-            // Only use the authenticated Google account avatar (falls back to empty string if none)
-            ownerAvatarUrl: currentUser?.photoURL || '',
-                
-            updatedAt: new Date().toISOString(),
+            localStorage.removeItem('quizAppProfile');
+            updateSidebarProfile();
             
-            // Only inject a creation date if the document is actually brand new
-            ...(isBrandNewDoc && { createdAt: new Date().toISOString() })
-        }, { merge: true });
-
-        currentQuizDocId = quizRef.id;
-        persistDraft();
-        cloudStatus.innerText = `Saved “${title}” to the cloud.`;
-    }
-
-    fileInput.addEventListener('change', async () => {
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-        try {
-            const text = await file.text();
-            const parsed = JSON.parse(text);
-            if (!Array.isArray(parsed)) throw new Error('The file must contain an array of questions.');
-            questions = parsed.map(normalizeQuestion).filter(q => q.f || q.e);
-            if (questions.length === 0) questions = [createBlankQuestion()];
-            renderQuestions();
-            status.innerText = `Imported ${questions.length} question${questions.length === 1 ? '' : 's'} from ${file.name}.`;
-        } catch (err) {
-            status.innerText = `Import failed: ${err.message}`;
+            quizList.innerHTML = '<div class="card">Sign in to view your saved quizzes.</div>';
+            status.innerText = 'Please sign in to see your cloud quizzes.';
         }
     });
 
-    avatarInput.addEventListener('change', async () => {
-        const file = avatarInput.files && avatarInput.files[0];
-        if (file) {
-            await uploadProfileAvatar(file);
-            avatarInput.value = '';
-        }
-    });
-    avatarBtn.addEventListener('click', () => avatarInput.click());
-
-    signInBtn.addEventListener('click', signInWithGoogle);
-    signOutBtn.addEventListener('click', signOutUser);
-    saveBtn.addEventListener('click', () => saveQuizToCloud(false));
-    saveNewBtn.addEventListener('click', () => saveQuizToCloud(true));
-    [quizTitleInput].forEach(el => el.addEventListener('input', persistDraft));
-    document.querySelectorAll('input, select').forEach(el => {
-        el.addEventListener('input', () => {
-            persistDraft();
-        });
-    });
-
-    const storedProfile = getStoredProfile();
-    if (storedProfile) {
-        updateSidebarProfile(storedProfile);
-    }
-
-    auth.onAuthStateChanged(updateAuthUi);
-    loadDraftFromSession();
-    renderQuestions();
+    signInBtn.addEventListener('click', signIn);
+    signOutBtn.addEventListener('click', signOut);
 </script>
 </body>
 </html>
