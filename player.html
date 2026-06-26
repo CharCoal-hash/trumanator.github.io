@@ -303,7 +303,15 @@
         updateSidebarProfile();
         hostRoomId = extractRoomIdFromUrl();
         const roomInput = document.getElementById("room-input");
+        const nameInput = document.getElementById("name-input"); // Added this reference pointer
         
+        // AUTO-POPULATE USERNAME FROM LOCAL STORAGE
+        const profile = getStoredProfile() || {};
+        if (profile.displayName && nameInput) {
+            nameInput.value = profile.displayName;
+            writeTrace(`Profile database handle synced: [${profile.displayName}] auto-filled.`);
+        }
+
         writeTrace(`Parsing URL parameters. Detected Target ID Room string: [${hostRoomId}]`);
         
         if (hostRoomId) {
