@@ -191,7 +191,47 @@
         const resolvedProfile = profile || currentProfile || getStoredProfile() || {};
         const displayName = resolvedProfile.displayName || currentUser?.displayName || currentUser?.email || 'Guest';
         const avatarUrl = resolvedProfile.avatarUrl || resolvedProfile.photoUrl || currentUser?.photoURL || defaultAvatar;
-        if (sidebarProfileName) sidebarProfileName.innerText = displayName;
+        
+        if (sidebarProfileName) {
+            // 1. Check if the input field has already been created to avoid resetting cursor focus
+            let nameInput = sidebarProfileName.querySelector('.profile-name-input');
+            
+            if (!nameInput) {
+                // Remove the old plain text and replace it with a styled transparent input box
+                sidebarProfileName.innerHTML = `
+                    <input type="text" class="profile-name-input" 
+                           value="${escapeHtml(displayName)}" 
+                           style="background:transparent; border:none; border-bottom:1px dashed rgba(255,255,255,0.3); color:white; font-size: inherit; font-weight: inherit; font-family: inherit; width: 100%; padding: 2px 0; outline: none;" 
+                           placeholder="Enter name...">
+                `;
+                nameInput = sidebarProfileName.querySelector('.profile-name-input');
+                
+                // 2. Attach a listener to automatically capture and save changes to localStorage as they type
+                nameInput.addEventListener('input', (e) => {
+                    const cleanName = e.target.value.trim();
+                    const updatedProfile = {
+                        ...resolvedProfile,
+                        displayName: cleanName || 'Guest', // defaults back to Guest if they erase it completely
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    // Save to local storage without re-rendering the whole sidebar (keeps input focused)
+                    currentProfile = updatedProfile;
+                    localStorage.setItem('quizAppProfile', JSON.stringify(updatedProfile));
+                    
+                    // Update the fallback preview image card link if it exists on screen
+                    if (profilePreview) {
+                        // Just synchronizes currentProfile across other variables
+                    }
+                });
+            } else {
+                // If the input element exists and isn't actively being typed in, update its value
+                if (document.activeElement !== nameInput) {
+                    nameInput.value = displayName;
+                }
+            }
+        }
+
         if (sidebarProfileImg) sidebarProfileImg.src = avatarUrl;
         if (sidebarProfileSub) sidebarProfileSub.innerText = currentUser ? 'Signed in' : 'No account linked';
         if (profilePreview) profilePreview.src = avatarUrl;
