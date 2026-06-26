@@ -91,16 +91,20 @@
         }
     }
 
+    // --- READS USERNAME AND B64 ICON DIRECTLY FROM LOCALSTORAGE ---
     function updateSidebarProfile() {
         const profile = getStoredProfile() || {};
+        
+        // Prioritize b64Avatar string over older web URLs
         const name = profile.displayName || 'Guest';
-        const avatar = profile.avatarUrl || profile.photoUrl || 'https://www.gravatar.com/avatar/00000000000000000000000000000?d=mp&f=y';
+        const avatar = profile.b64Avatar || profile.avatarUrl || profile.photoUrl || 'https://www.gravatar.com/avatar/00000000000000000000000000000?d=mp&f=y';
+        
         document.getElementById('sidebar-profile-name').innerText = name;
         document.getElementById('sidebar-profile-img').src = avatar;
         document.getElementById('sidebar-profile-sub').innerText = profile.uid ? 'Signed in' : 'No account linked';
     }
 
-    // Initialize sidebar based on cached storage immediately
+    // Initialize sidebar based on cached layout variables immediately
     updateSidebarProfile();
 
     const quizList = document.getElementById('quiz-list');
@@ -156,6 +160,24 @@
         }
     }
 
+    // --- CONVERTS IMAGE URL TO BASE64 STRING STREAM SAFELY ---
+    async function convertImageUrlToBase64(url) {
+        if (!url) return '';
+        try {
+            const response = await fetch(url, { mode: 'cors' });
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (e) {
+            console.warn("Could not convert avatar image link to base64 stream automatically:", e);
+            return url; // Fallback to direct network image context if standard extraction errors out
+        }
+    }
+
     async function signIn() {
         if (!isFirebaseConfigured) {
             status.innerText = 'Connect this app to a real Firebase project to enable Google sign-in.';
@@ -199,29 +221,34 @@
         }
     };
 
-    // --- TRACK FIREBASE AUTHENTICATION TO CONSTRUCT INTERIOR REGISTRY METRICS ---
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async (user) => {
         if (user) {
             signInBtn.classList.add('hidden');
             signOutBtn.classList.remove('hidden');
             
-            // Build profile payload directly out of the active token reference
+            // Check if we already have an initialized b64 profile cached locally
+            let currentCachedProfile = getStoredProfile() || {};
+            let base64AvatarString = currentCachedProfile.b64Avatar || '';
+            
+            if (!base64AvatarString && user.photoURL) {
+                status.innerText = 'Processing secure profile image assets...';
+                base64AvatarString = await convertImageUrlToBase64(user.photoURL);
+            }
+            
             const profilePayload = {
                 uid: user.uid,
-                displayName: user.displayName || 'Google User',
-                avatarUrl: user.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000?d=mp&f=y'
+                displayName: currentCachedProfile.displayName || user.displayName || 'Google User',
+                avatarUrl: user.photoURL || 'https://www.gravatar.com/avatar/00000000000000000000000000000?d=mp&f=y',
+                b64Avatar: base64AvatarString
             };
             
-            // Sync user data to cache storage across rooms
             localStorage.setItem('quizAppProfile', JSON.stringify(profilePayload));
             updateSidebarProfile();
-            
             loadQuizzes(user);
         } else {
             signInBtn.classList.remove('hidden');
             signOutBtn.classList.add('hidden');
             
-            // Purge local validation footprint cleanly
             localStorage.removeItem('quizAppProfile');
             updateSidebarProfile();
             
