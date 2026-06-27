@@ -67,7 +67,7 @@
                 transform: perspective(1400px) rotateX(-2deg) rotateY(0deg) translateZ(8px) rotateZ(1080deg); 
                 box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.09); 
             }
-            /* End State: Reset roll for seamless loop */
+            /* Final State & PAUSE */
             100% { 
                 transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0) rotateZ(0); 
                 box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); 
@@ -89,8 +89,7 @@
             width: 100%; max-width: 900px; background: linear-gradient(145deg, rgba(30,41,59,0.86), rgba(15,23,42,0.76));
             border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; position: relative;
             box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09);
-            /* ⚡️ THE CORE CHANGES HERE ⚡️ */
-            animation: animated-warp 20s ease-in-out infinite alternate; /* <-- NEW LINE ADDED */
+            animation: animated-warp 20s ease-in-out infinite alternate;
             transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0);
             transform-style: preserve-3d; overflow-y: auto;
         }
@@ -215,7 +214,7 @@
             
             <div id="view-lobby">
         <h1>Projet de Vocabulaire</h1>
-        <p class="subtitle">Scan to join the room</p>
+        <p class="subtitle">Try to scan to join the room, good luck.</p>
         
         <div class="lobby-view">
             <div>
@@ -1061,4 +1060,3 @@
 </script>
 </body>
 </html>
-/* Person with no job reading this was slain by depression and old age */
