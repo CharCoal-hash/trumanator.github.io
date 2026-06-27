@@ -15,6 +15,9 @@
             --blue: #3b82f6;
             --red: #ef4444;
             --purple: #8b5cf6;
+            --fluct-color-1: hsl(0, 70%, 50%); /* Reddish start */
+            --fluct-color-2: hsl(120, 90%, 50%); /* Green middle */
+            --fluct-color-3: hsl(240, 80%, 60%); /* Blue end */
         }
         * { box-sizing: border-box; }
         body {
@@ -42,6 +45,15 @@
             from { transform: translate3d(-3%, -2%, 0) scale(1); }
             to { transform: translate3d(3%, 2%, 0) scale(1.08); }
         }
+
+        @keyframes animated-warp {
+            0% { transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0); box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); }
+            25% { transform: perspective(1400px) rotateX(-1deg) rotateY(1deg) translateZ(10px); box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.09); }
+            50% { transform: perspective(1400px) rotateX(3deg) rotateY(-5deg) translateZ(-5px); box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); }
+            75% { transform: perspective(1400px) rotateX(-2deg) rotateY(0deg) translateZ(8px); box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.09); }
+            100% { transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0); box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); }
+        }
+
         .app-shell { display: flex; min-height: 100vh; }
         .app-sidebar {
             width: 220px; background: rgba(2, 6, 23, 0.92); border-right: 1px solid rgba(255,255,255,0.08);
@@ -58,14 +70,19 @@
             width: 100%; max-width: 900px; background: linear-gradient(145deg, rgba(30,41,59,0.86), rgba(15,23,42,0.76));
             border: 1px solid var(--border); border-radius: 24px; padding: 40px; text-align: center; position: relative;
             box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09);
+            /* ⚡️ THE CORE CHANGES HERE ⚡️ */
+            animation: animated-warp 20s ease-in-out infinite alternate; /* <-- NEW LINE ADDED */
             transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0);
             transform-style: preserve-3d; overflow-y: auto;
         }
         .container::before {
             content: "";
-            position: absolute; inset: 0; border-radius: inherit;
+            position: absolute; 
+            inset: 0; border-radius: inherit;
             background: linear-gradient(135deg, rgba(255,255,255,0.14), transparent 35%, transparent 65%, rgba(255,255,255,0.08));
-            pointer-events: none; transform: translateZ(20px);
+            pointer-events: none; 
+            transform: translateZ(20px); /* Keep the initial depth */
+            will-change: transform; /* Hint to the browser to optimize performance */
         }
         .v-tag { position: absolute; top: 15px; right: 20px; font-size: 0.8rem; font-family: monospace; color: #64748b; font-weight: bold; }
         h1 { margin: 0 0 10px 0; font-size: 2.5rem; }
