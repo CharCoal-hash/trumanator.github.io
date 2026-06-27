@@ -45,15 +45,34 @@
             from { transform: translate3d(-3%, -2%, 0) scale(1); }
             to { transform: translate3d(3%, 2%, 0) scale(1.08); }
         }
-
+        /* DO A BARREL ROLL! */
         @keyframes animated-warp {
-            0% { transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0); box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); }
-            25% { transform: perspective(1400px) rotateX(-1deg) rotateY(1deg) translateZ(10px); box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.09); }
-            50% { transform: perspective(1400px) rotateX(3deg) rotateY(-5deg) translateZ(-5px); box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); }
-            75% { transform: perspective(1400px) rotateX(-2deg) rotateY(0deg) translateZ(8px); box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.09); }
-            100% { transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0); box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); }
+            /* Start State: Zero roll */
+            0% { 
+                transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0) rotateZ(0); 
+                box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); 
+            }
+            /* Quarter Point: Slight roll */
+            25% { 
+                transform: perspective(1400px) rotateX(-1deg) rotateY(1deg) translateZ(10px) rotateZ(360deg); 
+                box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.09); 
+            }
+            /* Mid Point: Strong roll and warp */
+            50% { 
+                transform: perspective(1400px) rotateX(3deg) rotateY(-5deg) translateZ(-5px) rotateZ(720deg); 
+                box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); 
+            }
+            /* Three Quarter Point: Controlled roll */
+            75% { 
+                transform: perspective(1400px) rotateX(-2deg) rotateY(0deg) translateZ(8px) rotateZ(1080deg); 
+                box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.09); 
+            }
+            /* End State: Reset roll for seamless loop */
+            100% { 
+                transform: perspective(1400px) rotateX(2deg) rotateY(-2deg) translateZ(0) rotateZ(0); 
+                box-shadow: 0 20px 44px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.09); 
+            }
         }
-
         .app-shell { display: flex; min-height: 100vh; }
         .app-sidebar {
             width: 220px; background: rgba(2, 6, 23, 0.92); border-right: 1px solid rgba(255,255,255,0.08);
@@ -587,7 +606,7 @@
             printLog(`Data connection framework standard optimized with peer: ${conn.peer}`, 'ok');
         });
     });
-
+    /* Are you seriously still reading this? */
     function handleDisconnect(name) {
         if (scores[name] === undefined) return;
         delete scores[name];
@@ -819,7 +838,7 @@
             }
         }, intervalTickRate);
     }
-
+    /* Get a job */
     function openMod(name) {
         if (isWheelSpinning) return alert("Operation rejected: Selector wheel is actively performing sequence steps.");
         selectedModUser = name;
@@ -947,7 +966,7 @@
             }
         }, 1000);
     }
-
+    /* Goodbye my friend */
     function revealAnswer() {
         clearInterval(timerInterval);
         state = "REVEAL";
@@ -1008,7 +1027,7 @@
             else showFinals();
         }
     }
-
+    /* Ha! Got ya! I AM BACK */
     function showFinals() {
         printLog("Quiz parameters exhausted. Rendering absolute point matrix calculations.", 'ok');
         document.getElementById("view-game").classList.add("hidden");
@@ -1042,3 +1061,4 @@
 </script>
 </body>
 </html>
+/* Person with no job reading this was slain by depression and old age */
